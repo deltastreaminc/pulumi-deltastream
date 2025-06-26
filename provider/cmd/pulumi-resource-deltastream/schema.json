@@ -844,7 +844,7 @@
     },
     "resources": {
         "deltastream:index/database:Database": {
-            "description": "Database resource\n\n## Example Usage\n\n\u003c!--Start PulumiCodeChooser --\u003e\n```typescript\nimport * as pulumi from \"@pulumi/pulumi\";\nimport * as deltastream from \"@deltastream/pulumi\";\n\nconst example = new deltastream.Database(\"example\", {name: \"example_database\"});\n```\n```python\nimport pulumi\nimport deltastream-pulumi as deltastream\n\nexample = deltastream.Database(\"example\", name=\"example_database\")\n```\n```csharp\nusing System.Collections.Generic;\nusing System.Linq;\nusing Pulumi;\nusing Pulumi = DeltaStream.Pulumi;\n\nreturn await Deployment.RunAsync(() =\u003e \n{\n    var example = new Pulumi.Database(\"example\", new()\n    {\n        Name = \"example_database\",\n    });\n\n});\n```\n```go\npackage main\n\nimport (\n\t\"github.com/deltastreaminc/pulumi-deltastream/sdk/go/deltastream\"\n\t\"github.com/pulumi/pulumi/sdk/v3/go/pulumi\"\n)\n\nfunc main() {\n\tpulumi.Run(func(ctx *pulumi.Context) error {\n\t\t_, err := deltastream.NewDatabase(ctx, \"example\", \u0026deltastream.DatabaseArgs{\n\t\t\tName: pulumi.String(\"example_database\"),\n\t\t})\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\treturn nil\n\t})\n}\n```\n```java\npackage generated_program;\n\nimport com.pulumi.Context;\nimport com.pulumi.Pulumi;\nimport com.pulumi.core.Output;\nimport com.pulumi.deltastream.Database;\nimport com.pulumi.deltastream.DatabaseArgs;\nimport java.util.List;\nimport java.util.ArrayList;\nimport java.util.Map;\nimport java.io.File;\nimport java.nio.file.Files;\nimport java.nio.file.Paths;\n\npublic class App {\n    public static void main(String[] args) {\n        Pulumi.run(App::stack);\n    }\n\n    public static void stack(Context ctx) {\n        var example = new Database(\"example\", DatabaseArgs.builder()\n            .name(\"example_database\")\n            .build());\n\n    }\n}\n```\n```yaml\nresources:\n  example:\n    type: deltastream:Database\n    properties:\n      name: example_database\n```\n\u003c!--End PulumiCodeChooser --\u003e\n",
+            "description": "Database resource\n\n## Example Usage\n\n\u003c!--Start PulumiCodeChooser --\u003e\n```typescript\nimport * as pulumi from \"@pulumi/pulumi\";\nimport * as deltastream from \"@deltastream/pulumi\";\n\nconst example = new deltastream.Database(\"example\", {});\n```\n```python\nimport pulumi\nimport deltastream-pulumi as deltastream\n\nexample = deltastream.Database(\"example\")\n```\n```csharp\nusing System.Collections.Generic;\nusing System.Linq;\nusing Pulumi;\nusing Pulumi = DeltaStream.Pulumi;\n\nreturn await Deployment.RunAsync(() =\u003e \n{\n    var example = new Pulumi.Database(\"example\");\n\n});\n```\n```go\npackage main\n\nimport (\n\t\"github.com/deltastreaminc/pulumi-deltastream/sdk/go/deltastream\"\n\t\"github.com/pulumi/pulumi/sdk/v3/go/pulumi\"\n)\n\nfunc main() {\n\tpulumi.Run(func(ctx *pulumi.Context) error {\n\t\t_, err := deltastream.NewDatabase(ctx, \"example\", nil)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\treturn nil\n\t})\n}\n```\n```java\npackage generated_program;\n\nimport com.pulumi.Context;\nimport com.pulumi.Pulumi;\nimport com.pulumi.core.Output;\nimport com.pulumi.deltastream.Database;\nimport java.util.List;\nimport java.util.ArrayList;\nimport java.util.Map;\nimport java.io.File;\nimport java.nio.file.Files;\nimport java.nio.file.Paths;\n\npublic class App {\n    public static void main(String[] args) {\n        Pulumi.run(App::stack);\n    }\n\n    public static void stack(Context ctx) {\n        var example = new Database(\"example\");\n\n    }\n}\n```\n```yaml\nresources:\n  example:\n    type: deltastream:Database\n```\n\u003c!--End PulumiCodeChooser --\u003e\n",
             "properties": {
                 "createdAt": {
                     "type": "string",
@@ -1000,7 +1000,7 @@
             }
         },
         "deltastream:index/namespace:Namespace": {
-            "description": "Namespace resource\n\n## Example Usage\n\n\u003c!--Start PulumiCodeChooser --\u003e\n```typescript\nimport * as pulumi from \"@pulumi/pulumi\";\nimport * as deltastream from \"@deltastream/pulumi\";\n\nconst example = new deltastream.Database(\"example\", {name: \"example_database\"});\nconst exampleNamespace = new deltastream.Namespace(\"example\", {\n    database: example.name,\n    name: \"example_namespace\",\n});\n```\n```python\nimport pulumi\nimport deltastream-pulumi as deltastream\n\nexample = deltastream.Database(\"example\", name=\"example_database\")\nexample_namespace = deltastream.Namespace(\"example\",\n    database=example.name,\n    name=\"example_namespace\")\n```\n```csharp\nusing System.Collections.Generic;\nusing System.Linq;\nusing Pulumi;\nusing Pulumi = DeltaStream.Pulumi;\n\nreturn await Deployment.RunAsync(() =\u003e \n{\n    var example = new Pulumi.Database(\"example\", new()\n    {\n        Name = \"example_database\",\n    });\n\n    var exampleNamespace = new Pulumi.Namespace(\"example\", new()\n    {\n        Database = example.Name,\n        Name = \"example_namespace\",\n    });\n\n});\n```\n```go\npackage main\n\nimport (\n\t\"github.com/deltastreaminc/pulumi-deltastream/sdk/go/deltastream\"\n\t\"github.com/pulumi/pulumi/sdk/v3/go/pulumi\"\n)\n\nfunc main() {\n\tpulumi.Run(func(ctx *pulumi.Context) error {\n\t\texample, err := deltastream.NewDatabase(ctx, \"example\", \u0026deltastream.DatabaseArgs{\n\t\t\tName: pulumi.String(\"example_database\"),\n\t\t})\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\t_, err = deltastream.NewNamespace(ctx, \"example\", \u0026deltastream.NamespaceArgs{\n\t\t\tDatabase: example.Name,\n\t\t\tName:     pulumi.String(\"example_namespace\"),\n\t\t})\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\treturn nil\n\t})\n}\n```\n```java\npackage generated_program;\n\nimport com.pulumi.Context;\nimport com.pulumi.Pulumi;\nimport com.pulumi.core.Output;\nimport com.pulumi.deltastream.Database;\nimport com.pulumi.deltastream.DatabaseArgs;\nimport com.pulumi.deltastream.Namespace;\nimport com.pulumi.deltastream.NamespaceArgs;\nimport java.util.List;\nimport java.util.ArrayList;\nimport java.util.Map;\nimport java.io.File;\nimport java.nio.file.Files;\nimport java.nio.file.Paths;\n\npublic class App {\n    public static void main(String[] args) {\n        Pulumi.run(App::stack);\n    }\n\n    public static void stack(Context ctx) {\n        var example = new Database(\"example\", DatabaseArgs.builder()\n            .name(\"example_database\")\n            .build());\n\n        var exampleNamespace = new Namespace(\"exampleNamespace\", NamespaceArgs.builder()\n            .database(example.name())\n            .name(\"example_namespace\")\n            .build());\n\n    }\n}\n```\n```yaml\nresources:\n  example:\n    type: deltastream:Database\n    properties:\n      name: example_database\n  exampleNamespace:\n    type: deltastream:Namespace\n    name: example\n    properties:\n      database: ${example.name}\n      name: example_namespace\n```\n\u003c!--End PulumiCodeChooser --\u003e\n",
+            "description": "Namespace resource\n\n## Example Usage\n\n\u003c!--Start PulumiCodeChooser --\u003e\n```typescript\nimport * as pulumi from \"@pulumi/pulumi\";\nimport * as deltastream from \"@deltastream/pulumi\";\n\nconst exampleDatabase = new deltastream.Database(\"exampleDatabase\", {});\nconst exampleNamespace = new deltastream.Namespace(\"exampleNamespace\", {database: exampleDatabase.name});\n```\n```python\nimport pulumi\nimport deltastream-pulumi as deltastream\n\nexample_database = deltastream.Database(\"exampleDatabase\")\nexample_namespace = deltastream.Namespace(\"exampleNamespace\", database=example_database.name)\n```\n```csharp\nusing System.Collections.Generic;\nusing System.Linq;\nusing Pulumi;\nusing Pulumi = DeltaStream.Pulumi;\n\nreturn await Deployment.RunAsync(() =\u003e \n{\n    var exampleDatabase = new Pulumi.Database(\"exampleDatabase\");\n\n    var exampleNamespace = new Pulumi.Namespace(\"exampleNamespace\", new()\n    {\n        Database = exampleDatabase.Name,\n    });\n\n});\n```\n```go\npackage main\n\nimport (\n\t\"github.com/deltastreaminc/pulumi-deltastream/sdk/go/deltastream\"\n\t\"github.com/pulumi/pulumi/sdk/v3/go/pulumi\"\n)\n\nfunc main() {\n\tpulumi.Run(func(ctx *pulumi.Context) error {\n\t\texampleDatabase, err := deltastream.NewDatabase(ctx, \"exampleDatabase\", nil)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\t_, err = deltastream.NewNamespace(ctx, \"exampleNamespace\", \u0026deltastream.NamespaceArgs{\n\t\t\tDatabase: exampleDatabase.Name,\n\t\t})\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\treturn nil\n\t})\n}\n```\n```java\npackage generated_program;\n\nimport com.pulumi.Context;\nimport com.pulumi.Pulumi;\nimport com.pulumi.core.Output;\nimport com.pulumi.deltastream.Database;\nimport com.pulumi.deltastream.Namespace;\nimport com.pulumi.deltastream.NamespaceArgs;\nimport java.util.List;\nimport java.util.ArrayList;\nimport java.util.Map;\nimport java.io.File;\nimport java.nio.file.Files;\nimport java.nio.file.Paths;\n\npublic class App {\n    public static void main(String[] args) {\n        Pulumi.run(App::stack);\n    }\n\n    public static void stack(Context ctx) {\n        var exampleDatabase = new Database(\"exampleDatabase\");\n\n        var exampleNamespace = new Namespace(\"exampleNamespace\", NamespaceArgs.builder()\n            .database(exampleDatabase.name())\n            .build());\n\n    }\n}\n```\n```yaml\nresources:\n  exampleDatabase:\n    type: deltastream:Database\n  exampleNamespace:\n    type: deltastream:Namespace\n    properties:\n      database: ${exampleDatabase.name}\n```\n\u003c!--End PulumiCodeChooser --\u003e\n",
             "properties": {
                 "createdAt": {
                     "type": "string",
@@ -1442,7 +1442,7 @@
             }
         },
         "deltastream:index/secret:Secret": {
-            "description": "Secret resource\n\n## Example Usage\n\n\u003c!--Start PulumiCodeChooser --\u003e\n```typescript\nimport * as pulumi from \"@pulumi/pulumi\";\nimport * as deltastream from \"@deltastream/pulumi\";\n\nconst example = new deltastream.Secret(\"example\", {\n    name: \"example_secret\",\n    type: \"generic_string\",\n    description: \"secret description\",\n    stringValue: \"some value\",\n});\n```\n```python\nimport pulumi\nimport deltastream-pulumi as deltastream\n\nexample = deltastream.Secret(\"example\",\n    name=\"example_secret\",\n    type=\"generic_string\",\n    description=\"secret description\",\n    string_value=\"some value\")\n```\n```csharp\nusing System.Collections.Generic;\nusing System.Linq;\nusing Pulumi;\nusing Pulumi = DeltaStream.Pulumi;\n\nreturn await Deployment.RunAsync(() =\u003e \n{\n    var example = new Pulumi.Secret(\"example\", new()\n    {\n        Name = \"example_secret\",\n        Type = \"generic_string\",\n        Description = \"secret description\",\n        StringValue = \"some value\",\n    });\n\n});\n```\n```go\npackage main\n\nimport (\n\t\"github.com/deltastreaminc/pulumi-deltastream/sdk/go/deltastream\"\n\t\"github.com/pulumi/pulumi/sdk/v3/go/pulumi\"\n)\n\nfunc main() {\n\tpulumi.Run(func(ctx *pulumi.Context) error {\n\t\t_, err := deltastream.NewSecret(ctx, \"example\", \u0026deltastream.SecretArgs{\n\t\t\tName:        pulumi.String(\"example_secret\"),\n\t\t\tType:        pulumi.String(\"generic_string\"),\n\t\t\tDescription: pulumi.String(\"secret description\"),\n\t\t\tStringValue: pulumi.String(\"some value\"),\n\t\t})\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\treturn nil\n\t})\n}\n```\n```java\npackage generated_program;\n\nimport com.pulumi.Context;\nimport com.pulumi.Pulumi;\nimport com.pulumi.core.Output;\nimport com.pulumi.deltastream.Secret;\nimport com.pulumi.deltastream.SecretArgs;\nimport java.util.List;\nimport java.util.ArrayList;\nimport java.util.Map;\nimport java.io.File;\nimport java.nio.file.Files;\nimport java.nio.file.Paths;\n\npublic class App {\n    public static void main(String[] args) {\n        Pulumi.run(App::stack);\n    }\n\n    public static void stack(Context ctx) {\n        var example = new Secret(\"example\", SecretArgs.builder()\n            .name(\"example_secret\")\n            .type(\"generic_string\")\n            .description(\"secret description\")\n            .stringValue(\"some value\")\n            .build());\n\n    }\n}\n```\n```yaml\nresources:\n  example:\n    type: deltastream:Secret\n    properties:\n      name: example_secret\n      type: generic_string\n      description: secret description\n      stringValue: some value\n```\n\u003c!--End PulumiCodeChooser --\u003e\n",
+            "description": "Secret resource\n\n## Example Usage\n\n\u003c!--Start PulumiCodeChooser --\u003e\n```typescript\nimport * as pulumi from \"@pulumi/pulumi\";\nimport * as deltastream from \"@deltastream/pulumi\";\n\nconst example = new deltastream.Secret(\"example\", {\n    description: \"secret description\",\n    stringValue: \"some value\",\n    type: \"generic_string\",\n});\n```\n```python\nimport pulumi\nimport deltastream-pulumi as deltastream\n\nexample = deltastream.Secret(\"example\",\n    description=\"secret description\",\n    string_value=\"some value\",\n    type=\"generic_string\")\n```\n```csharp\nusing System.Collections.Generic;\nusing System.Linq;\nusing Pulumi;\nusing Pulumi = DeltaStream.Pulumi;\n\nreturn await Deployment.RunAsync(() =\u003e \n{\n    var example = new Pulumi.Secret(\"example\", new()\n    {\n        Description = \"secret description\",\n        StringValue = \"some value\",\n        Type = \"generic_string\",\n    });\n\n});\n```\n```go\npackage main\n\nimport (\n\t\"github.com/deltastreaminc/pulumi-deltastream/sdk/go/deltastream\"\n\t\"github.com/pulumi/pulumi/sdk/v3/go/pulumi\"\n)\n\nfunc main() {\n\tpulumi.Run(func(ctx *pulumi.Context) error {\n\t\t_, err := deltastream.NewSecret(ctx, \"example\", \u0026deltastream.SecretArgs{\n\t\t\tDescription: pulumi.String(\"secret description\"),\n\t\t\tStringValue: pulumi.String(\"some value\"),\n\t\t\tType:        pulumi.String(\"generic_string\"),\n\t\t})\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\treturn nil\n\t})\n}\n```\n```java\npackage generated_program;\n\nimport com.pulumi.Context;\nimport com.pulumi.Pulumi;\nimport com.pulumi.core.Output;\nimport com.pulumi.deltastream.Secret;\nimport com.pulumi.deltastream.SecretArgs;\nimport java.util.List;\nimport java.util.ArrayList;\nimport java.util.Map;\nimport java.io.File;\nimport java.nio.file.Files;\nimport java.nio.file.Paths;\n\npublic class App {\n    public static void main(String[] args) {\n        Pulumi.run(App::stack);\n    }\n\n    public static void stack(Context ctx) {\n        var example = new Secret(\"example\", SecretArgs.builder()\n            .description(\"secret description\")\n            .stringValue(\"some value\")\n            .type(\"generic_string\")\n            .build());\n\n    }\n}\n```\n```yaml\nresources:\n  example:\n    type: deltastream:Secret\n    properties:\n      description: secret description\n      stringValue: some value\n      type: generic_string\n```\n\u003c!--End PulumiCodeChooser --\u003e\n",
             "properties": {
                 "createdAt": {
                     "type": "string",
@@ -1571,7 +1571,7 @@
             }
         },
         "deltastream:index/store:Store": {
-            "description": "Store resource\n\n## Example Usage\n\n\u003c!--Start PulumiCodeChooser --\u003e\n```yaml\nresources:\n  kafkaWithSasl:\n    type: deltastream:Store\n    name: kafka_with_sasl\n    properties:\n      name: kafka_with_sasl_${suffix.hex}\n      kafka:\n        uris: ${kafkaUrl}\n        sasl_hash_function: PLAIN\n        sasl_username: ${kafkaSaslUsername}\n        sasl_password: ${kafkaSaslPassword}\n  confluentKafkaWithSasl:\n    type: deltastream:Store\n    name: confluent_kafka_with_sasl\n    properties:\n      name: confluent_kafka_with_sasl_${suffix.hex}\n      confluentKafka:\n        uris: ${kafkaUrl}\n        sasl_hash_function: PLAIN\n        sasl_username: ${kafkaSaslUsername}\n        sasl_password: ${kafkaSaslPassword}\n  kafkaWithIam:\n    type: deltastream:Store\n    name: kafka_with_iam\n    properties:\n      name: kafka_with_iam_${suffix.hex}\n      kafka:\n        uris: ${mskUrl}\n        sasl_hash_function: AWS_MSK_IAM\n        msk_iam_role_arn: ${mskIamRole}\n        msk_aws_region: ${mskRegion}\n  kinesisCreds:\n    type: deltastream:Store\n    name: kinesis_creds\n    properties:\n      name: kinesis_with_creds_${suffix.hex}\n      kinesis:\n        uris: ${kinesisUrl}\n        access_key_id: ${kinesisKey}\n        secret_access_key: ${kinesisSecret}\n  snowflake:\n    type: deltastream:Store\n    properties:\n      name: snowflake_${suffix.hex}\n      snowflake:\n        uris: ${snowflakeUris}\n        account_id: ${snowflakeAccountId}\n        cloud_region: ${snowflakeCloudRegion}\n        warehouse_name: ${snowflakeWarehouseName}\n        role_name: ${snowflakeRoleName}\n        username: ${snowflakeUsername}\n        client_key_file: ${snowflakeClientKeyFile}\n        client_key_passphrase: ${snowflakeClientKeyPassphrase}\n```\n\u003c!--End PulumiCodeChooser --\u003e\n",
+            "description": "Store resource\n\n## Example Usage\n\n\u003c!--Start PulumiCodeChooser --\u003e\n```yaml\nresources:\n  kafkaWithSasl:\n    type: deltastream:Store\n    properties:\n      kafka:\n        uris: ${var.kafka_url}\n        sasl_hash_function: PLAIN\n        sasl_username: ${var.kafka_sasl_username}\n        sasl_password: ${var.kafka_sasl_password}\n  confluentKafkaWithSasl:\n    type: deltastream:Store\n    properties:\n      confluentKafka:\n        uris: ${var.kafka_url}\n        sasl_hash_function: PLAIN\n        sasl_username: ${var.kafka_sasl_username}\n        sasl_password: ${var.kafka_sasl_password}\n  kafkaWithIam:\n    type: deltastream:Store\n    properties:\n      kafka:\n        uris: ${var.msk_url}\n        sasl_hash_function: AWS_MSK_IAM\n        msk_iam_role_arn: ${var.msk_iam_role}\n        msk_aws_region: ${var.msk_region}\n  kinesisCreds:\n    type: deltastream:Store\n    properties:\n      kinesis:\n        uris: ${var.kinesis_url}\n        access_key_id: ${var.kinesis_key}\n        secret_access_key: ${var.kinesis_secret}\n  snowflake:\n    type: deltastream:Store\n    properties:\n      snowflake:\n        uris: ${var.snowflake_uris}\n        account_id: ${var.snowflake_account_id}\n        cloud_region: ${var.snowflake_cloud_region}\n        warehouse_name: ${var.snowflake_warehouse_name}\n        role_name: ${var.snowflake_role_name}\n        username: ${var.snowflake_username}\n        client_key_file: ${var.snowflake_client_key_file}\n        client_key_passphrase: ${var.snowflake_client_key_passphrase}\n```\n\u003c!--End PulumiCodeChooser --\u003e\n",
             "properties": {
                 "confluentKafka": {
                     "$ref": "#/types/deltastream:index/StoreConfluentKafka:StoreConfluentKafka",
@@ -1732,29 +1732,29 @@
                 "description": "A collection of values returned by getDatabase.\n",
                 "properties": {
                     "createdAt": {
-                        "description": "Creation date of the Database\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Creation date of the Database\n"
                     },
                     "id": {
-                        "description": "The provider-assigned unique ID for this managed resource.\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "The provider-assigned unique ID for this managed resource.\n"
                     },
                     "name": {
-                        "description": "Name of the Database\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Name of the Database\n"
                     },
                     "owner": {
-                        "description": "Owning role of the Database\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Owning role of the Database\n"
                     }
                 },
+                "type": "object",
                 "required": [
                     "createdAt",
                     "name",
                     "owner",
                     "id"
-                ],
-                "type": "object"
+                ]
             }
         },
         "deltastream:index/getDatabases:getDatabases": {
@@ -1763,22 +1763,22 @@
                 "description": "A collection of values returned by getDatabases.\n",
                 "properties": {
                     "id": {
-                        "description": "The provider-assigned unique ID for this managed resource.\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "The provider-assigned unique ID for this managed resource.\n"
                     },
                     "items": {
-                        "description": "List of databases\n",
+                        "type": "array",
                         "items": {
                             "$ref": "#/types/deltastream:index/getDatabasesItem:getDatabasesItem"
                         },
-                        "type": "array"
+                        "description": "List of databases\n"
                     }
                 },
+                "type": "object",
                 "required": [
                     "items",
                     "id"
-                ],
-                "type": "object"
+                ]
             }
         },
         "deltastream:index/getEntities:getEntities": {
@@ -1807,34 +1807,34 @@
                 "description": "A collection of values returned by getEntities.\n",
                 "properties": {
                     "childEntities": {
-                        "description": "Child entities\n",
+                        "type": "array",
                         "items": {
                             "type": "string"
                         },
-                        "type": "array"
+                        "description": "Child entities\n"
                     },
                     "id": {
-                        "description": "The provider-assigned unique ID for this managed resource.\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "The provider-assigned unique ID for this managed resource.\n"
                     },
                     "parentPaths": {
-                        "description": "Path to parent entity\n",
+                        "type": "array",
                         "items": {
                             "type": "string"
                         },
-                        "type": "array"
+                        "description": "Path to parent entity\n"
                     },
                     "store": {
-                        "description": "Name of the Store\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Name of the Store\n"
                     }
                 },
+                "type": "object",
                 "required": [
                     "childEntities",
                     "store",
                     "id"
-                ],
-                "type": "object"
+                ]
             }
         },
         "deltastream:index/getEntityData:getEntityData": {
@@ -1872,43 +1872,43 @@
                 "description": "A collection of values returned by getEntityData.\n",
                 "properties": {
                     "entityPaths": {
-                        "description": "Path to entity\n",
+                        "type": "array",
                         "items": {
                             "type": "string"
                         },
-                        "type": "array"
+                        "description": "Path to entity\n"
                     },
                     "fromBeginning": {
-                        "description": "Read from beginning\n",
-                        "type": "boolean"
+                        "type": "boolean",
+                        "description": "Read from beginning\n"
                     },
                     "id": {
-                        "description": "The provider-assigned unique ID for this managed resource.\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "The provider-assigned unique ID for this managed resource.\n"
                     },
                     "numRows": {
-                        "description": "Number of rows to return\n",
-                        "type": "integer"
+                        "type": "integer",
+                        "description": "Number of rows to return\n"
                     },
                     "rows": {
-                        "description": "Rows\n",
+                        "type": "array",
                         "items": {
                             "type": "string"
                         },
-                        "type": "array"
+                        "description": "Rows\n"
                     },
                     "store": {
-                        "description": "Name of the Store\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Name of the Store\n"
                     }
                 },
+                "type": "object",
                 "required": [
                     "entityPaths",
                     "rows",
                     "store",
                     "id"
-                ],
-                "type": "object"
+                ]
             }
         },
         "deltastream:index/getNamespace:getNamespace": {
@@ -1939,34 +1939,34 @@
                 "description": "A collection of values returned by getNamespace.\n",
                 "properties": {
                     "createdAt": {
-                        "description": "Creation date of the Namespace\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Creation date of the Namespace\n"
                     },
                     "database": {
-                        "description": "Name of the Database\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Name of the Database\n"
                     },
                     "id": {
-                        "description": "The provider-assigned unique ID for this managed resource.\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "The provider-assigned unique ID for this managed resource.\n"
                     },
                     "name": {
-                        "description": "Name of the Namespace\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Name of the Namespace\n"
                     },
                     "owner": {
-                        "description": "Owning role of the Namespace\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Owning role of the Namespace\n"
                     }
                 },
+                "type": "object",
                 "required": [
                     "createdAt",
                     "database",
                     "name",
                     "owner",
                     "id"
-                ],
-                "type": "object"
+                ]
             }
         },
         "deltastream:index/getNamespaces:getNamespaces": {
@@ -1988,27 +1988,27 @@
                 "description": "A collection of values returned by getNamespaces.\n",
                 "properties": {
                     "database": {
-                        "description": "Name of the Database\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Name of the Database\n"
                     },
                     "id": {
-                        "description": "The provider-assigned unique ID for this managed resource.\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "The provider-assigned unique ID for this managed resource.\n"
                     },
                     "items": {
-                        "description": "List of namespaces\n",
+                        "type": "array",
                         "items": {
                             "$ref": "#/types/deltastream:index/getNamespacesItem:getNamespacesItem"
                         },
-                        "type": "array"
+                        "description": "List of namespaces\n"
                     }
                 },
+                "type": "object",
                 "required": [
                     "database",
                     "items",
                     "id"
-                ],
-                "type": "object"
+                ]
             }
         },
         "deltastream:index/getObject:getObject": {
@@ -2040,46 +2040,47 @@
                 "description": "A collection of values returned by getObject.\n",
                 "properties": {
                     "createdAt": {
-                        "description": "Creation date of the object\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Creation date of the object\n"
                     },
                     "database": {
-                        "description": "Name of the Database\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Name of the Database\n"
                     },
                     "fqn": {
-                        "description": "Fully qualified name of the Object\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Fully qualified name of the Object\n"
                     },
                     "id": {
-                        "description": "The provider-assigned unique ID for this managed resource.\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "The provider-assigned unique ID for this managed resource.\n"
                     },
                     "name": {
-                        "description": "Name of the Object\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Name of the Object\n"
                     },
                     "namespace": {
-                        "description": "Name of the Namespace\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Name of the Namespace\n"
                     },
                     "owner": {
-                        "description": "Owning role of the object\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Owning role of the object\n"
                     },
                     "state": {
-                        "description": "State of the Object\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "State of the Object\n"
                     },
                     "type": {
-                        "description": "Type of the Object\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Type of the Object\n"
                     },
                     "updatedAt": {
-                        "description": "Last update date of the object\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Last update date of the object\n"
                     }
                 },
+                "type": "object",
                 "required": [
                     "createdAt",
                     "database",
@@ -2091,8 +2092,7 @@
                     "type",
                     "updatedAt",
                     "id"
-                ],
-                "type": "object"
+                ]
             }
         },
         "deltastream:index/getObjects:getObjects": {
@@ -2119,32 +2119,32 @@
                 "description": "A collection of values returned by getObjects.\n",
                 "properties": {
                     "database": {
-                        "description": "Name of the Database\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Name of the Database\n"
                     },
                     "id": {
-                        "description": "The provider-assigned unique ID for this managed resource.\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "The provider-assigned unique ID for this managed resource.\n"
                     },
                     "namespace": {
-                        "description": "Name of the Namespace\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Name of the Namespace\n"
                     },
                     "objects": {
-                        "description": "List of objects\n",
+                        "type": "array",
                         "items": {
                             "$ref": "#/types/deltastream:index/getObjectsObject:getObjectsObject"
                         },
-                        "type": "array"
+                        "description": "List of objects\n"
                     }
                 },
+                "type": "object",
                 "required": [
                     "database",
                     "namespace",
                     "objects",
                     "id"
-                ],
-                "type": "object"
+                ]
             }
         },
         "deltastream:index/getSchemaRegistries:getSchemaRegistries": {
@@ -2153,22 +2153,22 @@
                 "description": "A collection of values returned by getSchemaRegistries.\n",
                 "properties": {
                     "id": {
-                        "description": "The provider-assigned unique ID for this managed resource.\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "The provider-assigned unique ID for this managed resource.\n"
                     },
                     "items": {
-                        "description": "List of schema registries\n",
+                        "type": "array",
                         "items": {
                             "$ref": "#/types/deltastream:index/getSchemaRegistriesItem:getSchemaRegistriesItem"
                         },
-                        "type": "array"
+                        "description": "List of schema registries\n"
                     }
                 },
+                "type": "object",
                 "required": [
                     "items",
                     "id"
-                ],
-                "type": "object"
+                ]
             }
         },
         "deltastream:index/getSchemaRegistry:getSchemaRegistry": {
@@ -2190,34 +2190,35 @@
                 "description": "A collection of values returned by getSchemaRegistry.\n",
                 "properties": {
                     "createdAt": {
-                        "description": "Creation date of the schema registry\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Creation date of the schema registry\n"
                     },
                     "id": {
-                        "description": "The provider-assigned unique ID for this managed resource.\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "The provider-assigned unique ID for this managed resource.\n"
                     },
                     "name": {
-                        "description": "Name of the schema registry\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Name of the schema registry\n"
                     },
                     "owner": {
-                        "description": "Owning role of the schema registry\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Owning role of the schema registry\n"
                     },
                     "state": {
-                        "description": "State of the schema registry\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "State of the schema registry\n"
                     },
                     "type": {
-                        "description": "Type of the schema registry\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Type of the schema registry\n"
                     },
                     "updatedAt": {
-                        "description": "Last update date of the schema registry\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Last update date of the schema registry\n"
                     }
                 },
+                "type": "object",
                 "required": [
                     "createdAt",
                     "name",
@@ -2226,8 +2227,7 @@
                     "type",
                     "updatedAt",
                     "id"
-                ],
-                "type": "object"
+                ]
             }
         },
         "deltastream:index/getSecret:getSecret": {
@@ -2249,38 +2249,39 @@
                 "description": "A collection of values returned by getSecret.\n",
                 "properties": {
                     "createdAt": {
-                        "description": "Creation date of the Secret\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Creation date of the Secret\n"
                     },
                     "description": {
-                        "description": "Description of the Secret\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Description of the Secret\n"
                     },
                     "id": {
-                        "description": "The provider-assigned unique ID for this managed resource.\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "The provider-assigned unique ID for this managed resource.\n"
                     },
                     "name": {
-                        "description": "Name of the Secret\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Name of the Secret\n"
                     },
                     "owner": {
-                        "description": "Owning role of the Secret\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Owning role of the Secret\n"
                     },
                     "status": {
-                        "description": "Status of the Secret\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Status of the Secret\n"
                     },
                     "type": {
-                        "description": "Secret type. (Valid values: generic_string)\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Secret type. (Valid values: generic_string)\n"
                     },
                     "updatedAt": {
-                        "description": "Last update date of the Secret\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Last update date of the Secret\n"
                     }
                 },
+                "type": "object",
                 "required": [
                     "createdAt",
                     "description",
@@ -2290,8 +2291,7 @@
                     "type",
                     "updatedAt",
                     "id"
-                ],
-                "type": "object"
+                ]
             }
         },
         "deltastream:index/getSecrets:getSecrets": {
@@ -2300,22 +2300,22 @@
                 "description": "A collection of values returned by getSecrets.\n",
                 "properties": {
                     "id": {
-                        "description": "The provider-assigned unique ID for this managed resource.\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "The provider-assigned unique ID for this managed resource.\n"
                     },
                     "items": {
-                        "description": "List of secrets\n",
+                        "type": "array",
                         "items": {
                             "$ref": "#/types/deltastream:index/getSecretsItem:getSecretsItem"
                         },
-                        "type": "array"
+                        "description": "List of secrets\n"
                     }
                 },
+                "type": "object",
                 "required": [
                     "items",
                     "id"
-                ],
-                "type": "object"
+                ]
             }
         },
         "deltastream:index/getStore:getStore": {
@@ -2361,12 +2361,12 @@
                         "description": "Confluent Kafka specific configuration\n"
                     },
                     "createdAt": {
-                        "description": "Creation date of the Store\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Creation date of the Store\n"
                     },
                     "id": {
-                        "description": "The provider-assigned unique ID for this managed resource.\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "The provider-assigned unique ID for this managed resource.\n"
                     },
                     "kafka": {
                         "$ref": "#/types/deltastream:index/getStoreKafka:getStoreKafka",
@@ -2377,12 +2377,12 @@
                         "description": "Kinesis specific configuration\n"
                     },
                     "name": {
-                        "description": "Name of the Store\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Name of the Store\n"
                     },
                     "owner": {
-                        "description": "Owning role of the Store\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Owning role of the Store\n"
                     },
                     "postgres": {
                         "$ref": "#/types/deltastream:index/getStorePostgres:getStorePostgres",
@@ -2393,18 +2393,19 @@
                         "description": "Snowflake specific configuration\n"
                     },
                     "state": {
-                        "description": "State of the Store\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "State of the Store\n"
                     },
                     "type": {
-                        "description": "Type of the Store\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Type of the Store\n"
                     },
                     "updatedAt": {
-                        "description": "Last update date of the Store\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Last update date of the Store\n"
                     }
                 },
+                "type": "object",
                 "required": [
                     "createdAt",
                     "name",
@@ -2413,8 +2414,7 @@
                     "type",
                     "updatedAt",
                     "id"
-                ],
-                "type": "object"
+                ]
             }
         },
         "deltastream:index/getStores:getStores": {
@@ -2423,22 +2423,22 @@
                 "description": "A collection of values returned by getStores.\n",
                 "properties": {
                     "id": {
-                        "description": "The provider-assigned unique ID for this managed resource.\n",
-                        "type": "string"
+                        "type": "string",
+                        "description": "The provider-assigned unique ID for this managed resource.\n"
                     },
                     "items": {
-                        "description": "List of stores\n",
+                        "type": "array",
                         "items": {
                             "$ref": "#/types/deltastream:index/getStoresItem:getStoresItem"
                         },
-                        "type": "array"
+                        "description": "List of stores\n"
                     }
                 },
+                "type": "object",
                 "required": [
                     "items",
                     "id"
-                ],
-                "type": "object"
+                ]
             }
         },
         "pulumi:providers:deltastream/terraformConfig": {
