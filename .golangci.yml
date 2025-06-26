@@ -3,7 +3,6 @@
 linters:
   enable:
   - errcheck
-  - gci
   - goconst
   - gofmt
   - gosec
@@ -27,11 +26,6 @@ issues:
 run:
   timeout: 20m
 linters-settings:
-  gci:
-    sections:
-      - standard # Standard section: captures all standard library packages.
-      - blank # Blank section: contains all blank imports.
-      - default # Default section: contains all imports that could not be matched to another section type.
-      - prefix(github.com/pulumi/) # Custom section: groups all imports with the github.com/pulumi/ prefix.
-      - prefix(github.com/deltastreaminc/pulumi-deltastream) # Custom section: local imports
-    custom-order: true
+  lll:
+    line-length: 300
+    tab-width: 1
