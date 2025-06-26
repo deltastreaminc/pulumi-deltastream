@@ -114,9 +114,10 @@ generate_go: .make/generate_go
 build_go: .make/build_go
 .make/generate_go: export PATH := $(WORKING_DIR)/.pulumi/bin:$(PATH)
 .make/generate_go: .make/install_plugins bin/$(CODEGEN)
-	$(GEN_ENVS) $(WORKING_DIR)/bin/$(CODEGEN) go --out sdk/go/
+	$(GEN_ENVS) $(WORKING_DIR)/bin/$(CODEGEN) go --out sdk/go/ --debug
 	@touch $@
 .make/build_go: .make/generate_go
+	cat sdk/go/deltastream/database.go
 	cd sdk && go list "$$(grep -e "^module" go.mod | cut -d ' ' -f 2)/go/..." | xargs -I {} bash -c 'go build {} && go clean -i {}'
 	@touch $@
 .PHONY: generate_go build_go
