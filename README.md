@@ -20,14 +20,6 @@ or `yarn`:
 yarn add @deltastream/pulumi
 ```
 
-### Python
-
-To use from Python, install using `pip`:
-
-```bash
-pip install deltastream-pulumi
-```
-
 ### Go
 
 To use from Go, use `go get` to grab the latest version of the library:
@@ -35,15 +27,3 @@ To use from Go, use `go get` to grab the latest version of the library:
 ```bash
 go get github.com/deltastreaminc/pulumi-deltastream/sdk/go/...
 ```
-
-### .NET
-
-To use from .NET, install using `dotnet add package`:
-
-```bash
-dotnet add package Deltastream.Pulumi
-```
-
-## Reference
-
-For detailed reference documentation, please visit [the Pulumi registry](https://www.pulumi.com/registry/packages/deltastream/api-docs/).

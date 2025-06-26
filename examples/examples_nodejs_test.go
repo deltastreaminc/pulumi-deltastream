@@ -1,6 +1,6 @@
 // Copyright 2024, Pulumi Corporation.  All rights reserved.
-//go:build nodejs || all
-// +build nodejs all
+//g o:build nodejs || all
+// + build nodejs all
 
 package examples
 
@@ -12,10 +12,9 @@ import (
 )
 
 func TestBasicTs(t *testing.T) {
-	t.Skip("Skipping until the provider has been implemented")
-
 	opts := getJSBaseOptions(t).With(integration.ProgramTestOptions{
-		Dir: filepath.Join(getCwd(t), "basic-ts"),
+		Dir:              filepath.Join(getCwd(t), "basic-ts"),
+		DestroyOnCleanup: true,
 	})
 
 	integration.ProgramTest(t, &opts)

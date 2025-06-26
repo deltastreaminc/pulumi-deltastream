@@ -6,7 +6,7 @@
         "typescript": "^5.8.3"
     },
     "dependencies": {
-        "@deltastream/pulumi": "file:../../sdk/nodejs",
+        "@deltastream/pulumi": "^0.1.0",
         "@pulumi/pulumi": "^3.0.0"
     }
 }
