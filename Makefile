@@ -114,7 +114,7 @@ generate_go: .make/generate_go
 build_go: .make/build_go
 .make/generate_go: export PATH := $(WORKING_DIR)/.pulumi/bin:$(PATH)
 .make/generate_go: .make/install_plugins bin/$(CODEGEN)
-	$(GEN_ENVS) $(WORKING_DIR)/bin/$(CODEGEN) go --out sdk/go/ --debug
+	$(GEN_ENVS) $(WORKING_DIR)/bin/$(CODEGEN) go --out sdk/go/
 	@touch $@
 .make/build_go: .make/generate_go
 	cat sdk/go/deltastream/database.go
