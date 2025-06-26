@@ -17,7 +17,7 @@ func main() {
 		}
 
 		_, err = deltastream.NewDatabase(ctx, "pulumi-database", &deltastream.DatabaseArgs{
-			Name: pulumi.String("pulumi-database2"),
+			Name: pulumi.String("pulumi-database"),
 		}, pulumi.Provider(provider))
 		if err != nil {
 			return err
