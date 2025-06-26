@@ -27,9 +27,7 @@ import (
 //
 //	func main() {
 //		pulumi.Run(func(ctx *pulumi.Context) error {
-//			_, err := deltastream.NewDatabase(ctx, "example", &deltastream.DatabaseArgs{
-//				Name: pulumi.String("example_database"),
-//			})
+//			_, err := deltastream.NewDatabase(ctx, "example", nil)
 //			if err != nil {
 //				return err
 //			}

@@ -14,10 +14,9 @@ import * as utilities from "./utilities";
  * import * as deltastream from "@deltastream/pulumi";
  *
  * const example = new deltastream.Secret("example", {
- *     name: "example_secret",
- *     type: "generic_string",
  *     description: "secret description",
  *     stringValue: "some value",
+ *     type: "generic_string",
  * });
  * ```
  */

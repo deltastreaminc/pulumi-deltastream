@@ -28,15 +28,12 @@ import (
 //
 //	func main() {
 //		pulumi.Run(func(ctx *pulumi.Context) error {
-//			example, err := deltastream.NewDatabase(ctx, "example", &deltastream.DatabaseArgs{
-//				Name: pulumi.String("example_database"),
-//			})
+//			exampleDatabase, err := deltastream.NewDatabase(ctx, "exampleDatabase", nil)
 //			if err != nil {
 //				return err
 //			}
-//			_, err = deltastream.NewNamespace(ctx, "example", &deltastream.NamespaceArgs{
-//				Database: example.Name,
-//				Name:     pulumi.String("example_namespace"),
+//			_, err = deltastream.NewNamespace(ctx, "exampleNamespace", &deltastream.NamespaceArgs{
+//				Database: exampleDatabase.Name,
 //			})
 //			if err != nil {
 //				return err
