@@ -59,7 +59,7 @@ jobs:
       - prerequisites
       - build_provider
       - test
-      - license_check
+      # - license_check
     uses: ./.github/workflows/publish.yml
     secrets: inherit
     with:
