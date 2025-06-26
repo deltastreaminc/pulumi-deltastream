@@ -13,11 +13,8 @@ import * as utilities from "./utilities";
  * import * as pulumi from "@pulumi/pulumi";
  * import * as deltastream from "@deltastream/pulumi";
  *
- * const example = new deltastream.Database("example", {name: "example_database"});
- * const exampleNamespace = new deltastream.Namespace("example", {
- *     database: example.name,
- *     name: "example_namespace",
- * });
+ * const exampleDatabase = new deltastream.Database("exampleDatabase", {});
+ * const exampleNamespace = new deltastream.Namespace("exampleNamespace", {database: exampleDatabase.name});
  * ```
  */
 export class Namespace extends pulumi.CustomResource {

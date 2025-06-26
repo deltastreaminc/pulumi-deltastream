@@ -13,7 +13,7 @@ import * as utilities from "./utilities";
  * import * as pulumi from "@pulumi/pulumi";
  * import * as deltastream from "@deltastream/pulumi";
  *
- * const example = new deltastream.Database("example", {name: "example_database"});
+ * const example = new deltastream.Database("example", {});
  * ```
  */
 export class Database extends pulumi.CustomResource {

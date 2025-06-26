@@ -29,10 +29,9 @@ import (
 //	func main() {
 //		pulumi.Run(func(ctx *pulumi.Context) error {
 //			_, err := deltastream.NewSecret(ctx, "example", &deltastream.SecretArgs{
-//				Name:        pulumi.String("example_secret"),
-//				Type:        pulumi.String("generic_string"),
 //				Description: pulumi.String("secret description"),
 //				StringValue: pulumi.String("some value"),
+//				Type:        pulumi.String("generic_string"),
 //			})
 //			if err != nil {
 //				return err
