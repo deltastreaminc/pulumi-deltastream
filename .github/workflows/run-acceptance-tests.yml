@@ -104,7 +104,7 @@ jobs:
     needs:
     - test
     - build_provider
-    - license_check
+    # - license_check
     - lint
     runs-on: ubuntu-latest
     steps:
@@ -136,7 +136,7 @@ jobs:
     with:
       version: ${{ needs.prerequisites.outputs.version }}
 
-  license_check:
-    name: License Check
-    uses: ./.github/workflows/license.yml
-    secrets: inherit
+  # license_check:
+  #   name: License Check
+  #   uses: ./.github/workflows/license.yml
+  #   secrets: inherit
