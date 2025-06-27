@@ -7,6 +7,9 @@ on:
     - "!v*.*.*-**"
 
 env:
+  DS_API_KEY: ${{ secrets.DS_API_KEY }}
+  DS_ORGANIZATION_ID: ${{ secrets.DS_ORGANIZATION_ID }}
+  DS_SERVER_URI: ${{ secrets.DS_SERVER_URI }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -51,10 +54,6 @@ jobs:
     name: lint
     uses: ./.github/workflows/lint.yml
     secrets: inherit
-  # license_check:
-  #   name: License Check
-  #   uses: ./.github/workflows/license.yml
-  #   secrets: inherit
 
   publish:
     name: publish
@@ -66,7 +65,6 @@ jobs:
       - prerequisites
       - build_provider
       - test
-      # - license_check
     uses: ./.github/workflows/publish.yml
     secrets: inherit
     with:

@@ -12,6 +12,9 @@ on:
 
 env:
   PR_COMMIT_SHA: ${{ github.event.client_payload.pull_request.head.sha }}
+  DS_API_KEY: ${{ secrets.DS_API_KEY }}
+  DS_ORGANIZATION_ID: ${{ secrets.DS_ORGANIZATION_ID }}
+  DS_SERVER_URI: ${{ secrets.DS_SERVER_URI }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -104,7 +107,6 @@ jobs:
     needs:
     - test
     - build_provider
-    # - license_check
     - lint
     runs-on: ubuntu-latest
     steps:
@@ -136,7 +138,3 @@ jobs:
     with:
       version: ${{ needs.prerequisites.outputs.version }}
 
-  # license_check:
-  #   name: License Check
-  #   uses: ./.github/workflows/license.yml
-  #   secrets: inherit

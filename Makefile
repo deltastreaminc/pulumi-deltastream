@@ -17,7 +17,7 @@ PULUMI_MISSING_DOCS_ERROR := false
 
 # Override during CI using `make [TARGET] PROVIDER_VERSION=""` or by setting a PROVIDER_VERSION environment variable
 # Local & branch builds will just used this fixed default version unless specified
-PROVIDER_VERSION ?= 1.0.2
+PROVIDER_VERSION ?= 1.0.0-alpha.0+dev
 
 # Check version doesn't start with a "v" - this is a common mistake
 ifeq ($(shell echo $(PROVIDER_VERSION) | cut -c1),v)
@@ -117,7 +117,6 @@ build_go: .make/build_go
 	$(GEN_ENVS) $(WORKING_DIR)/bin/$(CODEGEN) go --out sdk/go/
 	@touch $@
 .make/build_go: .make/generate_go
-	cat sdk/go/deltastream/database.go
 	cd sdk && go list "$$(grep -e "^module" go.mod | cut -d ' ' -f 2)/go/..." | xargs -I {} bash -c 'go build {} && go clean -i {}'
 	@touch $@
 .PHONY: generate_go build_go

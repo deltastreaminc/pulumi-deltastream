@@ -21,6 +21,9 @@ on:
 
 env:
   IS_PRERELEASE: ${{ inputs.isPrerelease }}
+  DS_API_KEY: ${{ secrets.DS_API_KEY }}
+  DS_ORGANIZATION_ID: ${{ secrets.DS_ORGANIZATION_ID }}
+  DS_SERVER_URI: ${{ secrets.DS_SERVER_URI }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -122,14 +125,7 @@ jobs:
       with:
         tools: pulumictl, pulumicli, nodejs, go
         cache-go: false
-    - name: Publish SDKs
-      if: inputs.skipJavaSdk == false
-      uses: pulumi/pulumi-package-publisher@c1672c7928591d563dccb12729e05e315c21f8c2 # v0.0.22
-      with:
-        sdk: all
-        version: ${{ inputs.version }}
     - name: Publish NodeJS SDKs
-      if: inputs.skipJavaSdk == true
       uses: pulumi/pulumi-package-publisher@c1672c7928591d563dccb12729e05e315c21f8c2 # v0.0.22
       with:
         sdk: npm
@@ -152,13 +148,6 @@ jobs:
           go.*
           go/**
           !*.tar.gz
-    # - name: Extract python version
-    #   id: python_version
-    #   working-directory: sdk/python
-    #   run: |
-    #     pip install toml-cli==0.7.0
-    #     version=$(toml get --toml-path pyproject.toml project.version)
-    #     echo "version=${version}" >> "$GITHUB_OUTPUT"
   create_docs_build:
     name: create_docs_build
     needs: publish_sdk
@@ -199,16 +188,3 @@ jobs:
         commit: ${{ github.sha }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # verify_release:
-  #   name: verify_release
-  #   needs: publish_sdk
-  #   permissions:
-  #     contents: write
-  #     id-token: write
-  #   uses: ./.github/workflows/verify-release.yml
-  #   secrets: inherit
-  #   with:
-  #     providerVersion: ${{ inputs.version }}
-  #     skipGoSdk: ${{ inputs.skipGoSdk }}
-  #     pythonVersion: ${{ needs.publish_sdk.outputs.python_version }}
