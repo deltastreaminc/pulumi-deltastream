@@ -1,6 +1,0 @@
-{
-  "resource": true,
-  "name": "deltastream",
-  "version": "1.0.2",
-  "server": "https://github.com/deltastreaminc/pulumi-deltastream/releases/download/v${VERSION}/"
-}
