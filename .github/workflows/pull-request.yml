@@ -2,7 +2,7 @@
 
 env:
   DS_API_KEY: ${{ secrets.DS_API_KEY }}
-  DS_ORGANIZATION_ID: ${{ secrets.GITHUB_TOKEN }}
+  DS_ORGANIZATION_ID: ${{ secrets.DS_ORGANIZATION_ID }}
   DS_SERVER_URI: ${{ secrets.DS_SERVER_URI }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

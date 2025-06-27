@@ -37,5 +37,5 @@ lint: true
 docker: false
 env:
   DS_API_KEY: ${{ secrets.DS_API_KEY }}
-  DS_ORGANIZATION_ID: ${{ secrets.GITHUB_TOKEN }}
+  DS_ORGANIZATION_ID: ${{ secrets.DS_ORGANIZATION_ID }}
   DS_SERVER_URI: ${{ secrets.DS_SERVER_URI }}

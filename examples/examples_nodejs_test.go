@@ -1,6 +1,6 @@
 // Copyright 2024, Pulumi Corporation.  All rights reserved.
-// g o:build nodejs || all
-// + build nodejs all
+//go:build nodejs || all
+// +build nodejs all
 
 package examples
 
