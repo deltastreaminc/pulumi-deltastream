@@ -114,7 +114,7 @@ func Provider() tfbridge.ProviderInfo {
 		},
 		JavaScript: &tfbridge.JavaScriptInfo{
 			RespectSchemaVersion: true,
-			PackageName:          "@deltastream/pulumi",
+			PackageName:          "@deltastream/pulumi-deltastream",
 			Resolutions:          map[string]string{},
 		},
 		Python: &tfbridge.PythonInfo{

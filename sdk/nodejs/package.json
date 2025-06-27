@@ -1,6 +1,6 @@
 {
-    "name": "@deltastream/pulumi",
-    "version": "1.0.2",
+    "name": "@deltastream/pulumi-deltastream",
+    "version": "1.0.0-alpha.0+dev",
     "description": "A Pulumi package for creating and managing DeltaStream cloud resources.",
     "keywords": [
         "deltastream",
@@ -22,7 +22,7 @@
     "pulumi": {
         "resource": true,
         "name": "deltastream",
-        "version": "1.0.2",
+        "version": "1.0.0-alpha.0+dev",
         "server": "https://github.com/deltastreaminc/pulumi-deltastream/releases/download/v${VERSION}/"
     }
 }

@@ -11,13 +11,13 @@ This package is available for several languages/platforms:
 To use from JavaScript or TypeScript in Node.js, install using either `npm`:
 
 ```bash
-npm install @deltastream/pulumi
+npm install @deltastream/pulumi-deltastream
 ```
 
 or `yarn`:
 
 ```bash
-yarn add @deltastream/pulumi
+yarn add @deltastream/pulumi-deltastream
 ```
 
 ### Go
