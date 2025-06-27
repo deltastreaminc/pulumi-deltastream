@@ -1,5 +1,5 @@
 import * as pulumi from "@pulumi/pulumi";
-import * as deltastream from "@deltastream/pulumi";
+import * as deltastream from "@deltastream/pulumi-deltastream";
 import { randomUUID } from "crypto";
 import { awaitStackRegistrations } from "@pulumi/pulumi/runtime";
 

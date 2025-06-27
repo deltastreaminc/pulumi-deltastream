@@ -11,7 +11,7 @@ import * as utilities from "./utilities";
  *
  * ```typescript
  * import * as pulumi from "@pulumi/pulumi";
- * import * as deltastream from "@deltastream/pulumi";
+ * import * as deltastream from "@deltastream/pulumi-deltastream";
  *
  * const example = deltastream.getDatabase({
  *     name: "example_database",
@@ -68,7 +68,7 @@ export interface GetDatabaseResult {
  *
  * ```typescript
  * import * as pulumi from "@pulumi/pulumi";
- * import * as deltastream from "@deltastream/pulumi";
+ * import * as deltastream from "@deltastream/pulumi-deltastream";
  *
  * const example = deltastream.getDatabase({
  *     name: "example_database",

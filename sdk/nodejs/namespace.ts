@@ -11,7 +11,7 @@ import * as utilities from "./utilities";
  *
  * ```typescript
  * import * as pulumi from "@pulumi/pulumi";
- * import * as deltastream from "@deltastream/pulumi";
+ * import * as deltastream from "@deltastream/pulumi-deltastream";
  *
  * const exampleDatabase = new deltastream.Database("exampleDatabase", {});
  * const exampleNamespace = new deltastream.Namespace("exampleNamespace", {database: exampleDatabase.name});

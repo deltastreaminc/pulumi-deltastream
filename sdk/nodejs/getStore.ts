@@ -13,7 +13,7 @@ import * as utilities from "./utilities";
  *
  * ```typescript
  * import * as pulumi from "@pulumi/pulumi";
- * import * as deltastream from "@deltastream/pulumi";
+ * import * as deltastream from "@deltastream/pulumi-deltastream";
  *
  * const example = deltastream.getStore({
  *     name: "example_store",
@@ -122,7 +122,7 @@ export interface GetStoreResult {
  *
  * ```typescript
  * import * as pulumi from "@pulumi/pulumi";
- * import * as deltastream from "@deltastream/pulumi";
+ * import * as deltastream from "@deltastream/pulumi-deltastream";
  *
  * const example = deltastream.getStore({
  *     name: "example_store",
