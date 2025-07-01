@@ -1,6 +1,6 @@
 {
   "resource": true,
   "name": "deltastream",
-  "version": "1.0.0-alpha.0+dev",
+  "version": "0.1.6",
   "server": "https://github.com/deltastreaminc/pulumi-deltastream/releases/download/v${VERSION}/"
 }
