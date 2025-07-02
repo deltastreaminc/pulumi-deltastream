@@ -1,0 +1,12 @@
+{
+    "name": "postgres-cdc-to-snowflake",
+    "main": "index.ts",
+    "devDependencies": {
+        "@types/node": "^18",
+        "typescript": "^5.0.0"
+    },
+    "dependencies": {
+        "@deltastream/pulumi-deltastream": "^0.1.6",
+        "@pulumi/pulumi": "^3.181.0"
+    }
+}
