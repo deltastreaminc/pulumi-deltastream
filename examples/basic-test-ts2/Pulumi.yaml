@@ -1,0 +1,10 @@
+name: postgres-cdc-to-snowflake
+description: DeltaStream example for Postgres CDC to Snowflake
+runtime:
+  name: nodejs
+  options:
+    packagemanager: yarn
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: typescript
