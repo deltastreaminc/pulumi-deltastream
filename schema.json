@@ -1,0 +1,904 @@
+{
+  "name": "deltastream",
+  "displayName": "pulumi-deltastream",
+  "description": "A Pulumi provider for DeltaStream.",
+  "homepage": "https://www.deltastream.io",
+  "namespace": "deltastream",
+  "meta": {
+    "moduleFormat": "(.*)"
+  },
+  "language": {
+    "csharp": {
+      "respectSchemaVersion": true
+    },
+    "go": {
+      "generateResourceContainerTypes": true,
+      "importBasePath": "github.com/deltastreaminc/pulumi-deltastream/sdk/go/pulumi-deltastream",
+      "respectSchemaVersion": true
+    },
+    "nodejs": {
+      "respectSchemaVersion": true,
+      "packageName": "@deltastream/pulumi-deltastream"
+    },
+    "python": {
+      "pyproject": {
+        "enabled": true
+      },
+      "respectSchemaVersion": true
+    }
+  },
+  "config": {
+    "variables": {
+      "apiKey": {
+        "type": "string"
+      },
+      "insecureSkipVerify": {
+        "type": "boolean"
+      },
+      "organization": {
+        "type": "string"
+      },
+      "role": {
+        "type": "string"
+      },
+      "server": {
+        "type": "string"
+      },
+      "sessionId": {
+        "type": "string"
+      }
+    },
+    "defaults": [
+      "server"
+    ]
+  },
+  "types": {
+    "deltastream:index:GetDatabaseResult": {
+      "properties": {
+        "createdAt": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "createdAt",
+        "name",
+        "owner"
+      ]
+    },
+    "deltastream:index:GetNamespaceResult": {
+      "properties": {
+        "createdAt": {
+          "type": "string"
+        },
+        "database": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "createdAt",
+        "database",
+        "name",
+        "owner"
+      ]
+    },
+    "deltastream:index:GetObjectResult": {
+      "properties": {
+        "createdAt": {
+          "type": "string"
+        },
+        "database": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "createdAt",
+        "database",
+        "fqn",
+        "name",
+        "namespace",
+        "owner",
+        "state",
+        "type",
+        "updatedAt"
+      ]
+    },
+    "deltastream:index:GetStoreResult": {
+      "properties": {
+        "createdAt": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "createdAt",
+        "name",
+        "owner",
+        "state",
+        "type",
+        "updatedAt"
+      ]
+    },
+    "deltastream:index:KafkaInputs": {
+      "properties": {
+        "mskAwsRegion": {
+          "type": "string"
+        },
+        "mskIamRoleArn": {
+          "type": "string"
+        },
+        "saslHashFunction": {
+          "type": "string"
+        },
+        "saslPassword": {
+          "type": "string",
+          "secret": true
+        },
+        "saslUsername": {
+          "type": "string",
+          "secret": true
+        },
+        "schemaRegistryName": {
+          "type": "string"
+        },
+        "tlsCaCertFile": {
+          "type": "string"
+        },
+        "tlsDisabled": {
+          "type": "boolean"
+        },
+        "tlsVerifyServerHostname": {
+          "type": "boolean"
+        },
+        "uris": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "saslHashFunction",
+        "uris"
+      ]
+    },
+    "deltastream:index:PostgresInputs": {
+      "properties": {
+        "password": {
+          "type": "string",
+          "secret": true
+        },
+        "tlsDisabled": {
+          "type": "boolean"
+        },
+        "tlsVerifyServerHostname": {
+          "type": "boolean"
+        },
+        "uris": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "password",
+        "uris",
+        "username"
+      ]
+    },
+    "deltastream:index:SnowflakeInputs": {
+      "properties": {
+        "accountId": {
+          "type": "string"
+        },
+        "clientKey": {
+          "type": "string",
+          "secret": true
+        },
+        "cloudRegion": {
+          "type": "string"
+        },
+        "roleName": {
+          "type": "string"
+        },
+        "uris": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        },
+        "warehouseName": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "accountId",
+        "clientKey",
+        "cloudRegion",
+        "roleName",
+        "uris",
+        "username",
+        "warehouseName"
+      ]
+    }
+  },
+  "provider": {
+    "properties": {
+      "apiKey": {
+        "type": "string"
+      },
+      "organization": {
+        "type": "string"
+      },
+      "role": {
+        "type": "string"
+      },
+      "server": {
+        "type": "string"
+      },
+      "sessionId": {
+        "type": "string"
+      }
+    },
+    "type": "object",
+    "required": [
+      "server"
+    ],
+    "inputProperties": {
+      "apiKey": {
+        "type": "string"
+      },
+      "insecureSkipVerify": {
+        "type": "boolean"
+      },
+      "organization": {
+        "type": "string"
+      },
+      "role": {
+        "type": "string"
+      },
+      "server": {
+        "type": "string"
+      },
+      "sessionId": {
+        "type": "string"
+      }
+    },
+    "requiredInputs": [
+      "server"
+    ]
+  },
+  "resources": {
+    "deltastream:index:Database": {
+      "description": "A DeltaStream database resource that provides namespacing for streams, changelogs, and other objects",
+      "properties": {
+        "createdAt": {
+          "type": "string",
+          "description": "The timestamp when the database was created"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the database to create. If the name is case sensitive, wrap it in quotes."
+        },
+        "owner": {
+          "type": "string",
+          "description": "The owner of the database"
+        }
+      },
+      "type": "object",
+      "required": [
+        "createdAt",
+        "name"
+      ],
+      "inputProperties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the database to create. If the name is case sensitive, wrap it in quotes."
+        },
+        "owner": {
+          "type": "string",
+          "description": "Optional owning role. When set, statements execute as this role during create."
+        }
+      },
+      "requiredInputs": [
+        "name"
+      ]
+    },
+    "deltastream:index:DeltaStreamObject": {
+      "description": "DeltaStreamObject (relation) resource supporting STREAM, CHANGELOG, TABLE creation via SQL DDL",
+      "properties": {
+        "createdAt": {
+          "type": "string"
+        },
+        "database": {
+          "type": "string"
+        },
+        "fqn": {
+          "type": "string",
+          "description": "Fully qualified name of the relation as database.namespace.name"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "path": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Path of the relation as [database, namespace, name]"
+        },
+        "sql": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string",
+          "description": "Provisioning state of the relation"
+        },
+        "store": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of the relation (stream|changelog|table)"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "createdAt",
+        "database",
+        "fqn",
+        "name",
+        "namespace",
+        "owner",
+        "path",
+        "sql",
+        "state",
+        "store",
+        "type",
+        "updatedAt"
+      ],
+      "inputProperties": {
+        "database": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "sql": {
+          "type": "string"
+        },
+        "store": {
+          "type": "string"
+        }
+      },
+      "requiredInputs": [
+        "database",
+        "namespace",
+        "sql",
+        "store"
+      ]
+    },
+    "deltastream:index:Namespace": {
+      "description": "Namespace resource providing logical grouping within a database for streams and other objects",
+      "properties": {
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp of the namespace"
+        },
+        "database": {
+          "type": "string",
+          "description": "Name of the database containing the namespace"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the namespace"
+        },
+        "owner": {
+          "type": "string",
+          "description": "Optional owning role. When set, statements execute as this role during create."
+        }
+      },
+      "type": "object",
+      "required": [
+        "createdAt",
+        "database",
+        "name"
+      ],
+      "inputProperties": {
+        "database": {
+          "type": "string",
+          "description": "Name of the database containing the namespace"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the namespace"
+        },
+        "owner": {
+          "type": "string",
+          "description": "Optional owning role. When set, statements execute as this role during create."
+        }
+      },
+      "requiredInputs": [
+        "database",
+        "name"
+      ]
+    },
+    "deltastream:index:Query": {
+      "description": "Continuous query resource (INSERT INTO ... SELECT ...) streaming data from source relations into a sink relation.",
+      "properties": {
+        "createdAt": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "queryId": {
+          "type": "string",
+          "description": "System-generated query identifier"
+        },
+        "queryName": {
+          "type": "string"
+        },
+        "queryVersion": {
+          "type": "integer"
+        },
+        "sinkRelationFqn": {
+          "type": "string"
+        },
+        "sourceRelationFqns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sql": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string",
+          "description": "Lifecycle state of the query (starting|running|terminate_requested|terminated|errored)"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "createdAt",
+        "owner",
+        "queryId",
+        "sinkRelationFqn",
+        "sourceRelationFqns",
+        "sql",
+        "state",
+        "updatedAt"
+      ],
+      "inputProperties": {
+        "owner": {
+          "type": "string"
+        },
+        "sinkRelationFqn": {
+          "type": "string"
+        },
+        "sourceRelationFqns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sql": {
+          "type": "string"
+        }
+      },
+      "requiredInputs": [
+        "sinkRelationFqn",
+        "sourceRelationFqns",
+        "sql"
+      ]
+    },
+    "deltastream:index:Store": {
+      "description": "Store resource supporting external data store connectivity (initial Kafka support)",
+      "properties": {
+        "createdAt": {
+          "type": "string"
+        },
+        "kafka": {
+          "$ref": "#/types/deltastream:index:KafkaInputs"
+        },
+        "name": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "postgres": {
+          "$ref": "#/types/deltastream:index:PostgresInputs"
+        },
+        "snowflake": {
+          "$ref": "#/types/deltastream:index:SnowflakeInputs"
+        },
+        "state": {
+          "type": "string",
+          "description": "Provisioning state of the store"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of the store"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "createdAt",
+        "name",
+        "owner",
+        "state",
+        "type",
+        "updatedAt"
+      ],
+      "inputProperties": {
+        "kafka": {
+          "$ref": "#/types/deltastream:index:KafkaInputs"
+        },
+        "name": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "postgres": {
+          "$ref": "#/types/deltastream:index:PostgresInputs"
+        },
+        "snowflake": {
+          "$ref": "#/types/deltastream:index:SnowflakeInputs"
+        }
+      },
+      "requiredInputs": [
+        "name"
+      ]
+    }
+  },
+  "functions": {
+    "deltastream:index:getDatabase": {
+      "inputs": {
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ]
+      },
+      "outputs": {
+        "properties": {
+          "createdAt": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "name",
+          "owner"
+        ],
+        "type": "object"
+      }
+    },
+    "deltastream:index:getDatabases": {
+      "inputs": {
+        "type": "object"
+      },
+      "outputs": {
+        "properties": {
+          "databases": {
+            "items": {
+              "$ref": "#/types/deltastream:index:GetDatabaseResult"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "databases"
+        ],
+        "type": "object"
+      }
+    },
+    "deltastream:index:getNamespace": {
+      "inputs": {
+        "properties": {
+          "database": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "database",
+          "name"
+        ]
+      },
+      "outputs": {
+        "properties": {
+          "createdAt": {
+            "type": "string"
+          },
+          "database": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "database",
+          "name",
+          "owner"
+        ],
+        "type": "object"
+      }
+    },
+    "deltastream:index:getNamespaces": {
+      "inputs": {
+        "properties": {
+          "database": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "database"
+        ]
+      },
+      "outputs": {
+        "properties": {
+          "namespaces": {
+            "items": {
+              "$ref": "#/types/deltastream:index:GetNamespaceResult"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "namespaces"
+        ],
+        "type": "object"
+      }
+    },
+    "deltastream:index:getObject": {
+      "inputs": {
+        "properties": {
+          "database": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "database",
+          "name",
+          "namespace"
+        ]
+      },
+      "outputs": {
+        "properties": {
+          "createdAt": {
+            "type": "string"
+          },
+          "database": {
+            "type": "string"
+          },
+          "fqn": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "database",
+          "fqn",
+          "name",
+          "namespace",
+          "owner",
+          "state",
+          "type",
+          "updatedAt"
+        ],
+        "type": "object"
+      }
+    },
+    "deltastream:index:getObjects": {
+      "inputs": {
+        "properties": {
+          "database": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "database",
+          "namespace"
+        ]
+      },
+      "outputs": {
+        "properties": {
+          "objects": {
+            "items": {
+              "$ref": "#/types/deltastream:index:GetObjectResult"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "objects"
+        ],
+        "type": "object"
+      }
+    },
+    "deltastream:index:getStore": {
+      "inputs": {
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ]
+      },
+      "outputs": {
+        "properties": {
+          "createdAt": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "name",
+          "owner",
+          "state",
+          "type",
+          "updatedAt"
+        ],
+        "type": "object"
+      }
+    },
+    "deltastream:index:getStores": {
+      "inputs": {
+        "type": "object"
+      },
+      "outputs": {
+        "properties": {
+          "stores": {
+            "items": {
+              "$ref": "#/types/deltastream:index:GetStoreResult"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "stores"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

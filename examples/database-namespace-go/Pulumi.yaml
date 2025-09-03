@@ -1,0 +1,3 @@
+name: simple-go-example
+runtime: go
+description: A simple example using the DeltaStream Pulumi provider (Go)

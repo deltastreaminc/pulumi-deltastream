@@ -1,0 +1,187 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (override, no leading v)'
+        required: false
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  GO_VERSION: '1.24.x'
+  NODE_VERSION: '20.x'
+  REPO_MAIN: 'deltastreaminc/pulumi-deltastream'
+
+jobs:
+  derive-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.out.outputs.version }}
+      is_prerelease: ${{ steps.out.outputs.is_prerelease }}
+    steps:
+      - name: Derive version
+        id: out
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VER="${GITHUB_REF#refs/tags/v}"
+          else
+            VER="${{ github.event.inputs.version }}"
+          fi
+          if [[ -z "$VER" ]]; then
+            echo 'Version not found' >&2; exit 1;
+          fi
+          PRERELEASE="false"
+          if [[ "$VER" == *-* ]]; then PRERELEASE="true"; fi
+          echo "version=$VER" >> $GITHUB_OUTPUT
+          echo "is_prerelease=$PRERELEASE" >> $GITHUB_OUTPUT
+          echo "Resolved version: $VER (prerelease=$PRERELEASE)"
+
+  build-binaries:
+    needs: derive-version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            runner: ubuntu-latest
+          - goos: linux
+            goarch: arm64
+            runner: ubuntu-latest
+          - goos: darwin
+            goarch: arm64
+            runner: macos-latest
+        #   - goos: windows
+        #     goarch: amd64
+        #     runner: windows-latest
+        #   - goos: windows
+        #     goarch: arm64
+        #     runner: windows-latest
+    runs-on: ${{ matrix.runner }}
+    env:
+      VERSION: ${{ needs.derive-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Build provider
+        shell: bash
+        run: |
+          export GOOS=${{ matrix.goos }}
+          export GOARCH=${{ matrix.goarch }}
+          BIN=bin/pulumi-resource-deltastream
+          if [[ "${{ matrix.goos }}" == 'windows' ]]; then BIN+='.exe'; fi
+          go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o "$BIN" ./cmd/pulumi-resource-deltastream
+      - name: Codesign (macOS only)
+        if: ${{ matrix.goos == 'darwin' && github.repository == env.REPO_MAIN }}
+        shell: bash
+        env:
+          APPLE_DEVELOPER_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
+          APPLE_DEVELOPER_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNATURE_IDENTITY: ${{ secrets.APPLE_SIGNATURE_IDENTITY }}
+        run: |
+          set -euo pipefail
+          echo "Importing certificate for signing"
+          KEYCHAIN=build-signing.keychain-db
+          security create-keychain -p password "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p password "$KEYCHAIN"
+          echo "$APPLE_DEVELOPER_CERTIFICATE_P12_BASE64" | base64 -d > signing.p12
+          security import signing.p12 -k "$KEYCHAIN" -P "$APPLE_DEVELOPER_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security list-keychain -d user -s "$KEYCHAIN" $(security list-keychains | sed 's/"//g')
+          BIN=bin/pulumi-resource-deltastream
+          [[ -f "$BIN" ]] || { echo 'Binary missing'; exit 1; }
+          codesign --force --timestamp --sign "$APPLE_SIGNATURE_IDENTITY" "$BIN"
+          codesign --verify --verbose=4 "$BIN"
+      - name: Package artifact
+        shell: bash
+        run: |
+          mkdir -p dist
+          BIN=bin/pulumi-resource-deltastream
+          if [[ "${{ matrix.goos }}" == 'windows' ]]; then BIN+='.exe'; fi
+          ARCHIVE="pulumi-resource-deltastream-v${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}"
+          if [[ "${{ matrix.goos }}" == 'windows' ]]; then
+            zip -j "dist/${ARCHIVE}.zip" "$BIN"
+          else
+            tar -C bin -czf "dist/${ARCHIVE}.tar.gz" $(basename "$BIN")
+          fi
+      - name: Upload artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: provider-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/*
+
+
+  publish-npm:
+    needs: [derive-version, build-binaries]
+    # Use explicit repository literal to avoid evaluation issues referencing env context here
+    if: ${{ github.repository == 'deltastreaminc/pulumi-deltastream' && startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.derive-version.outputs.version }}
+      IS_PRERELEASE: ${{ needs.derive-version.outputs.is_prerelease }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: 'https://registry.npmjs.org'
+      - name: Configure npm auth
+        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Install deps
+        working-directory: sdk/nodejs
+        run: yarn install --frozen-lockfile
+      - name: Sync version
+        working-directory: sdk/nodejs
+        run: |
+          yarn version --no-git-tag-version --new-version "$VERSION"
+      - name: Publish
+        working-directory: sdk/nodejs
+        run: |
+          EXTRA=""
+          if [[ "$IS_PRERELEASE" == 'true' ]]; then EXTRA="--tag next"; fi
+          yarn publish --non-interactive --access public $EXTRA
+      - name: Generate Go SBOM
+        uses: CycloneDX/gh-gomod-generate-sbom@efc74245d6802c8cefd925620515442756c70d8f # v2.0.0
+        with:
+          version: latest
+          args: mod -json -licenses -output sbom-go.cdx.json
+      - name: Generate Node SBOM
+        if: ${{ hashFiles('sdk/nodejs/package.json') != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          pushd sdk/nodejs >/dev/null
+          yarn install --ignore-scripts --frozen-lockfile
+          npx @cyclonedx/cyclonedx-npm --output ../sbom-node.cdx.json || echo "[warn] node SBOM generation failed"
+          popd >/dev/null
+      - name: Upload SBOM artifacts
+        if: ${{ github.repository == env.REPO_MAIN }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sbom
+          path: sbom-*.cdx.json
+      - name: Create GitHub Release (auto notes)
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
+        with:
+          tag_name: v${{ env.VERSION }}
+          generate_release_notes: true
+          prerelease: ${{ env.IS_PRERELEASE }}
+          files: |
+            sbom-go.cdx.json
+            sbom-node.cdx.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
