@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  repository_dispatch:
+    types: [run-tests]
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: '1.24.x'
+  NODE_VERSION: '20.x'
+  REPO_MAIN: 'deltastreaminc/pulumi-deltastream'
+  PULUMI_CLI_VERSION: 'v3.169.0'
+
+jobs:
+
+  quick-check:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Setup Pulumi CLI
+        uses: pulumi/actions@cc7494be991dba0978f7ffafaf995b0449a0998e # v6.5.0
+        with:
+          pulumi-version: ${{ env.PULUMI_CLI_VERSION }}
+      - name: Build provider & SDKs (linux only)
+        run: make clean build schema generate build_sdks
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: sdk/nodejs/yarn.lock
+      - name: Node pack dry-run
+        working-directory: sdk/nodejs
+        run: |
+          yarn pack --dry-run || yarn pack --filename tmp.tgz
+
+  full-tests:
+    if: ${{ github.event_name == 'repository_dispatch' && github.event.action == 'run-tests' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Setup Pulumi CLI
+        uses: pulumi/actions@cc7494be991dba0978f7ffafaf995b0449a0998e # v6.5.0
+        with:
+          pulumi-version: ${{ env.PULUMI_CLI_VERSION }}
+      - name: Build provider & SDKs
+        run: make clean build schema generate build_sdks
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: sdk/nodejs/yarn.lock
+      - name: Setup credentials.yaml
+        run: |
+          mkdir -p examples
+          printf '%s\n' "${CI_CREDENTIALS_YAML}" > examples/credentials.yaml
+        env:
+          CI_CREDENTIALS_YAML: ${{ secrets.CI_CREDENTIALS_YAML }}
+      - name: Tests (provider)
+        run: |
+          make test
+
+

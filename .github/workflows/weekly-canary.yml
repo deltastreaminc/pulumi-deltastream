@@ -1,0 +1,82 @@
+name: Weekly Canary
+
+on:
+  schedule:
+    - cron: '0 6 * * 0'  # Sundays 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  GO_VERSION: '1.24.x'
+
+jobs:
+  build-matrix:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            runner: ubuntu-latest
+          - goos: linux
+            goarch: arm64
+            runner: ubuntu-latest
+          - goos: darwin
+            goarch: arm64
+            runner: macos-latest
+          # windows amd64 can be enabled once provider validated
+          # - goos: windows
+          #   goarch: amd64
+          #   runner: windows-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Build provider
+        shell: bash
+        run: |
+          export GOOS=${{ matrix.goos }}
+          export GOARCH=${{ matrix.goarch }}
+          go build -trimpath -o bin/pulumi-resource-deltastream ./cmd/pulumi-resource-deltastream
+      - name: Unit tests
+        shell: bash
+        run: |
+          go test -count=1 ./provider/...
+      - name: Compile examples (smoke)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d examples/object-go ]; then (cd examples/object-go && go build ./...); fi
+
+  report-failures:
+    runs-on: ubuntu-latest
+    needs: build-matrix
+    if: ${{ needs.build-matrix.result == 'failure' }}
+    steps:
+      - name: Open or update issue
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const title = `Weekly Canary Failure ${(new Date()).toISOString().substring(0,10)}`;
+            const labelNames = ['platform','canary-failure'];
+            // Ensure labels exist
+            for (const name of labelNames) {
+              try { await github.rest.issues.getLabel({owner: context.repo.owner, repo: context.repo.repo, name}); } catch {
+                await github.rest.issues.createLabel({owner: context.repo.owner, repo: context.repo.repo, name, color: 'B60205'});
+              }
+            }
+            const issues = await github.paginate(github.rest.issues.listForRepo, {owner: context.repo.owner, repo: context.repo.repo, state: 'open', labels: labelNames.join(',')});
+            let existing = issues.find(i => i.title.startsWith('Weekly Canary Failure')); 
+            const bodyLine = `Failure run: ${context.runId} at ${new Date().toISOString()}`;
+            if (existing) {
+              await github.rest.issues.createComment({owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.number, body: bodyLine});
+            } else {
+              await github.rest.issues.create({owner: context.repo.owner, repo: context.repo.repo, title, body: bodyLine, labels: labelNames});
+            }
