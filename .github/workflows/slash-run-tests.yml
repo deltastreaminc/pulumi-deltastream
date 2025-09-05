@@ -5,19 +5,42 @@ on:
     types: [created]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: read
 
 jobs:
   dispatch-run-tests:
     if: >-
-      ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/run tests') }}
+      ${{ github.event.issue.pull_request && contains(github.event.comment.body, '/test') }}
     runs-on: ubuntu-latest
     steps:
+      - name: Authorize commenter
+        id: auth
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LOGIN: ${{ github.event.comment.user.login }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          ORG="${REPO%%/*}"
+          # Default to unauthorized
+          ASSOC=""
+          # Try organization membership first
+          if gh api orgs/$ORG/members/$LOGIN >/dev/null 2>&1; then
+            ASSOC="MEMBER"
+          fi
+          # Fall back: if repo owner matches login treat as OWNER
+          OWNER="${ORG}"
+          if [ "$LOGIN" = "$OWNER" ]; then ASSOC="OWNER"; fi
+          if [ -z "$ASSOC" ]; then
+            echo "Commenter '$LOGIN' not a member/owner; blocking trigger" >&2
+            exit 1
+          fi
+          echo "Authorized association: $ASSOC"
       - name: Dispatch run-tests event
         uses: peter-evans/slash-command-dispatch@13bc09769d122a64f75aa5037256f6f2d78be8c4 # v4.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           permission: write
-          commands: run-tests
+          commands: test
           issue-type: pull-request
