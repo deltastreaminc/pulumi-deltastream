@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   repository_dispatch:
-    types: [run-tests]
+    types: [test]
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.run_id }}
