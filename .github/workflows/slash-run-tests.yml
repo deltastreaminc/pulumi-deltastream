@@ -16,11 +16,16 @@ jobs:
             github.event.comment.author_association == 'OWNER' ) }}
     runs-on: ubuntu-latest
     steps:
-      - name: Dispatch test event
-        uses: peter-evans/slash-command-dispatch@13bc09769d122a64f75aa5037256f6f2d78be8c4 # v4.0.0
+      - name: Emit repository_dispatch with payload
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          permission: write
-          commands: test
-          issue-type: pull-request
-          event-type-suffix: ''
+          script: |
+            // Send an auxiliary repository_dispatch including PR number & current head SHA
+            const prNumber = context.issue.number;
+            const { data: pr } = await github.rest.pulls.get({owner: context.repo.owner, repo: context.repo.repo, pull_number: prNumber});
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'test',
+              client_payload: { pr: prNumber, sha: pr.head.sha }
+            });

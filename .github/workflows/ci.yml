@@ -37,12 +37,19 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: sdk/nodejs/yarn.lock
+      - name: Enable Corepack & Yarn
+        run: |
+          corepack enable
+          yarn --version
+      - name: Install Node deps (post-generation)
+        working-directory: sdk/nodejs
+        run: yarn install --frozen-lockfile
       - name: Node pack dry-run
         working-directory: sdk/nodejs
         run: |
           yarn pack --dry-run || yarn pack --filename tmp.tgz
 
-  full-tests:
+  extended-tests:
     if: ${{ github.event_name == 'repository_dispatch' && github.event.action == 'test' }}
     runs-on: ubuntu-latest
     steps:
@@ -63,14 +70,60 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: sdk/nodejs/yarn.lock
+      - name: Enable Corepack & Yarn
+        run: |
+          corepack enable
+          yarn --version
+      - name: Install Node deps (post-generation)
+        working-directory: sdk/nodejs
+        run: yarn install --frozen-lockfile
       - name: Setup credentials.yaml
         run: |
-          mkdir -p examples
-          printf '%s\n' "${CI_CREDENTIALS_YAML}" > examples/credentials.yaml
+          if [ -n "${CI_CREDENTIALS_YAML}" ]; then
+            mkdir -p examples
+            printf '%s\n' "${CI_CREDENTIALS_YAML}" > examples/credentials.yaml
+          else
+            echo "[info] CI_CREDENTIALS_YAML not set; skipping credentials file"
+          fi
         env:
           CI_CREDENTIALS_YAML: ${{ secrets.CI_CREDENTIALS_YAML }}
-      - name: Tests (provider)
+      - name: Run provider tests
+        run: make test
+      - name: Collect test reports
+        if: always()
         run: |
-          make test
+          mkdir -p artifacts
+          go test -count=1 -json ./provider/... > artifacts/tests.json || true
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: extended-linux
+          path: artifacts/
+      - name: Create/Update Extended Tests Check
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            let conclusion = 'success';
+            try {
+              const data = fs.readFileSync('artifacts/tests.json','utf8');
+              if (/FAIL|"Action":"fail"/.test(data)) conclusion = 'failure';
+            } catch {}
+            const summary = `Extended integration tests (${conclusion}) run on linux only.`;
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Extended Tests',
+              head_sha: process.env.GITHUB_SHA,
+              status: 'completed',
+              conclusion,
+              output: { title: 'Extended Tests', summary, text: summary }
+            });
+      - name: Job summary
+        if: always()
+        run: |
+          echo "### Extended Tests (linux)" >> $GITHUB_STEP_SUMMARY
+          echo "Created check with conclusion above." >> $GITHUB_STEP_SUMMARY
 
 
