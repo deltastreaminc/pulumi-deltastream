@@ -1,50 +1,66 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+
+
+# Pulumi Deltastream Provider Constitution
+
+
+
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Idiomatic Go Provider
+All provider, resource, and function code must be written in idiomatic Go, following the latest Go best practices. Provider logic is organized under a `provider/` directory, with resources and functions as separate files. Use the latest supported version of Go.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Deltastream SQL as Source of Truth
+All interactions with Deltastream must use SQL syntax as defined in the [Deltastream SQL Reference](https://docs.deltastream.io/reference/sql-syntax) and [Core Concepts](https://docs.deltastream.io/overview/core-concepts). No custom or undocumented SQL is permitted.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+#### Deltastream System Tables
+To query the status of Deltastream objects, the provider must use the `deltastream.sys.[object]` tables. These system tables provide metadata such as `owner`, `state`, `createdAt`, and `updatedAt` for each object type. The provider must poll these tables to ensure that objects are ready to use after creation or modification.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+> **Note:** If the fields or schema for a specific `deltastream.sys.[object]` table are not documented, the implementer must query the user for the available fields and their meanings before proceeding.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. Schema and SDK Generation
+The Pulumi schema.json and SDKs for Node.js and Python are generated from Go source. Direct edits to generated code or schema.json are strictly forbidden. All changes must be made in the Go provider source files. Node.js and Python SDKs are build artifacts only and must not be edited directly
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### IV. Integration Test-First
+All features and changes must be covered by integration tests. Unit tests are optional. No observability, or metrics support is required unless explicitly required by a feature.
+If an error occurs, the error message must provide enough information for the user to understand and fix the issue.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### V. Versioning and Migration
+- All changes must follow semantic versioning (MAJOR.MINOR.PATCH).
+- Breaking changes require a migration plan and must be documented in the constitution history and templates.
+- The constitution version must be updated with each amendment, and all templates must reference the current version.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+### VI. Simplicity and Complexity Justification
+- Simplicity is required: avoid unnecessary abstractions, patterns, or projects.
+- Any complexity or deviation from the simplest approach must be justified and documented in the plan and PR.
+- The number of projects should be minimized (prefer a single project structure unless justified).
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### VII. Documentation and Code Review
+All code and features must be documented. Code review is mandatory for all changes. Adherence to this constitution is required for approval.
+
+
+## Additional Constraints
+
+- Use Makefile and scripts to automate build, test, and codegen steps.
+- Provider configuration must be handled via Pulumi config blocks, not hardcoded values.
+- All Deltastream core concepts must be implemented as resources or functions, following [Deltastream Core Concepts](https://docs.deltastream.io/overview/core-concepts).
+
+
+## Development Workflow
+
+- All development must occur in Go source files under the provider directory.
+- Generated files (schema.json, Node.js/Python SDKs) must not be edited directly.
+- All changes require integration test coverage.
+- Code review and documentation are required for all pull requests.
+- All amendments to the constitution must follow the [Constitution Update Checklist](../memory/constitution_update_checklist.md) and ensure all templates are updated and versioned.
+
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+- This constitution supersedes all other development practices for the Pulumi Deltastream provider.
+- Amendments require documentation, approval, and a migration plan.
+- All PRs and reviews must verify compliance with this constitution.
+- Complexity must be justified and documented.
+- All templates and documentation must be kept in sync with the constitution version and requirements.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 2.3.0 | **Ratified**: 2025-09-07 | **Last Amended**: 2025-09-07

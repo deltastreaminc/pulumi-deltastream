@@ -10,7 +10,7 @@ When amending the constitution (`/memory/constitution.md`), ensure all dependent
 - [ ] `/templates/tasks-template.md` - Update if new task types needed
 - [ ] `/.claude/commands/plan.md` - Update if planning process changes
 - [ ] `/.claude/commands/tasks.md` - Update if task generation affected
-- [ ] `/CLAUDE.md` - Update runtime development guidelines
+- [ ] `/AGENTS.md` - Update runtime development guidelines
 
 ### Article-specific updates:
 
@@ -76,9 +76,9 @@ Watch for these often-forgotten updates:
 
 ## Template Sync Status
 
-Last sync check: 2025-07-16
-- Constitution version: 2.1.1
-- Templates aligned: ❌ (missing versioning, observability details)
+Last sync check: 2025-09-07
+- Constitution version: 2.3.0
+- Templates aligned: ✅ (including Deltastream system tables)
 
 ---
 

@@ -99,6 +99,7 @@ When creating this spec from a user prompt:
 - [ ] Success criteria are measurable
 - [ ] Scope is clearly bounded
 - [ ] Dependencies and assumptions identified
+- [ ] Deltastream system tables usage documented (if applicable)
 
 ---
 
@@ -114,3 +115,4 @@ When creating this spec from a user prompt:
 - [ ] Review checklist passed
 
 ---
+*Based on Constitution v2.2.0 - See `/memory/constitution.md`*

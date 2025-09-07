@@ -63,6 +63,7 @@
 - Order: Contract→Integration→E2E→Unit strictly followed?
 - Real dependencies used? (actual DBs, not mocks)
 - Integration tests for: new libraries, contract changes, shared schemas?
+- Deltastream system tables (`deltastream.sys.[object]`) used for status checks?
 - FORBIDDEN: Implementation before test, skipping RED phase
 
 **Observability**:
@@ -234,4 +235,4 @@ ios/ or android/
 - [ ] Complexity deviations documented
 
 ---
-*Based on Constitution v2.1.1 - See `/memory/constitution.md`*
+*Based on Constitution v2.2.0 - See `/memory/constitution.md`*

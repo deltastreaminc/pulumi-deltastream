@@ -112,7 +112,11 @@ Task: "Integration test auth in tests/integration/test_auth.py"
    - Each story → integration test [P]
    - Quickstart scenarios → validation tasks
 
-4. **Ordering**:
+4. **From Deltastream Requirements**:
+   - Each resource → system table polling task
+   - Status transitions → validation tasks
+
+5. **Ordering**:
    - Setup → Tests → Models → Services → Endpoints → Polish
    - Dependencies block parallel execution
 
@@ -122,6 +126,10 @@ Task: "Integration test auth in tests/integration/test_auth.py"
 - [ ] All contracts have corresponding tests
 - [ ] All entities have model tasks
 - [ ] All tests come before implementation
+- [ ] All resources use system tables for status checks
 - [ ] Parallel tasks truly independent
 - [ ] Each task specifies exact file path
 - [ ] No task modifies same file as another [P] task
+
+---
+*Based on Constitution v2.2.0 - See `/memory/constitution.md`*
