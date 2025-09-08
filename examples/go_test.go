@@ -29,6 +29,8 @@ func TestBasicGo(t *testing.T) {
 	opts := getGoBaseOptions(t).With(integration.ProgramTestOptions{
 		Dir:              filepath.Join(getCwd(t), "database-namespace-go"),
 		DestroyOnCleanup: true,
+		AllowEmptyPreviewChanges: true,
+		AllowEmptyUpdateChanges:  true,
 		Env: []string{
 			"DELTASTREAM_API_KEY=" + apiKey,
 			"DELTASTREAM_SERVER=" + server,
@@ -66,6 +68,8 @@ func TestKafkaStoreUpdateGo(t *testing.T) {
 	opts := base.With(integration.ProgramTestOptions{
 		Dir:              step1Dir,
 		DestroyOnCleanup: true,
+		AllowEmptyPreviewChanges: true,
+		AllowEmptyUpdateChanges:  true,
 		Env: []string{
 			"DELTASTREAM_API_KEY=" + apiKey,
 			"DELTASTREAM_SERVER=" + server,
@@ -123,6 +127,8 @@ func TestSnowflakeStoreUpdateGo(t *testing.T) {
 	opts := getGoBaseOptions(t).With(integration.ProgramTestOptions{
 		Dir:              step1Dir,
 		DestroyOnCleanup: true,
+		AllowEmptyPreviewChanges: true,
+		AllowEmptyUpdateChanges:  true,
 		Env: []string{
 			"DELTASTREAM_API_KEY=" + apiKey,
 			"DELTASTREAM_SERVER=" + server,
@@ -210,6 +216,8 @@ func TestPostgresStoreUpdateGo(t *testing.T) {
 	opts := getGoBaseOptions(t).With(integration.ProgramTestOptions{
 		Dir:              step1Dir,
 		DestroyOnCleanup: true,
+		AllowEmptyPreviewChanges: true,
+		AllowEmptyUpdateChanges:  true,
 		Env: []string{
 			"DELTASTREAM_API_KEY=" + apiKey,
 			"DELTASTREAM_SERVER=" + server,
@@ -289,6 +297,8 @@ func TestQueryGo(t *testing.T) {
 		Dir:              filepath.Join(getCwd(t), "query-go"),
 		DestroyOnCleanup: true,
 		SkipPreview:      true,
+		AllowEmptyPreviewChanges: true,
+		AllowEmptyUpdateChanges:  true,
 		Env: []string{
 			"DELTASTREAM_API_KEY=" + apiKey,
 			"DELTASTREAM_SERVER=" + server,
