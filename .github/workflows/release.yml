@@ -18,11 +18,11 @@ jobs:
     steps:
       - name: Get version from tag
         id: get_version
-        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
         if: github.event_name == 'push'
       - name: Get version from input
         id: get_input_version
-        run: echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        run: echo "version=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
         if: github.event_name == 'workflow_dispatch'
 
   build:
@@ -37,13 +37,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.24.x'
       - name: Setup Pulumi
-        uses: pulumi/actions@v4
+        uses: pulumi/actions@v5
         with:
           pulumi-version: '>=3.182.0'
       - name: Setup Node.js
@@ -90,7 +90,7 @@ jobs:
           find bin -type f -name "pulumi-resource-deltastream" -exec codesign --force --sign "${{ secrets.APPLE_SIGNATURE_IDENTITY }}" --options runtime {} \;
       
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pulumi-deltastream-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'darwin' }}-${{ matrix.arch }}
           path: bin/
@@ -100,13 +100,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.24.x'
       - name: Setup Pulumi
-        uses: pulumi/actions@v4
+        uses: pulumi/actions@v5
         with:
           pulumi-version: '>=3.182.0'
       # Download artifacts BEFORE Node.js setup to ensure yarn.lock is present for caching
@@ -133,7 +133,7 @@ jobs:
       - name: Install Yarn
         run: npm install -g yarn@1.22.22
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
       - name: Move artifacts to bin directory
@@ -146,13 +146,21 @@ jobs:
           echo "${{ secrets.CI_CREDENTIALS_YAML }}" > examples/credentials.yaml
       - name: Run tests
         run: make install_sdks test
+      - name: Upload Go command-output logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-command-output-logs
+          path: ~/go/src/**/command-output/*
+          if-no-files-found: ignore
+          retention-days: 5
 
   publish:
     needs: [setup, test]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       # Download artifacts BEFORE Node.js setup to ensure yarn.lock is present for caching
       - name: Download provider build artifacts
         uses: actions/download-artifact@v4
@@ -179,7 +187,7 @@ jobs:
       - name: Install Yarn
         run: npm install -g yarn@1.22.22
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
       - name: Move artifacts to bin directory
@@ -195,7 +203,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: Release ${{ needs.setup.outputs.version }}
           files: |
