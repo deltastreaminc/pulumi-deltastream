@@ -1,0 +1,160 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.2.3)'
+        required: true
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Get version from tag
+        id: get_version
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        if: github.event_name == 'push'
+      - name: Get version from input
+        id: get_input_version
+        run: echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        if: github.event_name == 'workflow_dispatch'
+
+  build:
+    needs: setup
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        arch: [amd64, arm64]
+        exclude:
+          - os: macos-latest
+            arch: amd64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24.x'
+      - name: Setup Pulumi
+        uses: pulumi/actions@v4
+        with:
+          pulumi-version: '>=3.182.0'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'yarn'
+      - name: Install Yarn
+        run: npm install -g yarn@1.22.22
+      
+      # Apple code signing for macOS builds
+      - name: Install Apple certificate
+        if: matrix.os == 'macos-latest'
+        run: |
+          echo "${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}" | base64 --decode > certificate.p12
+          security create-keychain -p "${{ github.run_id }}" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "${{ github.run_id }}" build.keychain
+          security import certificate.p12 -k build.keychain -P "${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "${{ github.run_id }}" build.keychain
+          rm certificate.p12
+      
+      - name: Build artifacts
+        run: make build GOOS=${{ matrix.os == 'ubuntu-latest' && 'linux' || 'darwin' }} GOARCH=${{ matrix.arch }}
+      
+      - name: Sign macOS binaries
+        if: matrix.os == 'macos-latest'
+        run: |
+          find bin -type f -name "pulumi-resource-deltastream" -exec codesign --force --sign "${{ secrets.APPLE_SIGNATURE_IDENTITY }}" --options runtime {} \;
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: pulumi-deltastream-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'darwin' }}-${{ matrix.arch }}
+          path: bin/
+
+  test:
+    needs: [setup, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24.x'
+      - name: Setup Pulumi
+        uses: pulumi/actions@v4
+        with:
+          pulumi-version: '>=3.182.0'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'yarn'
+      - name: Install Yarn
+        run: npm install -g yarn@1.22.22
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+      - name: Move artifacts to bin directory
+        run: |
+          mkdir -p bin
+          cp -r artifacts/pulumi-deltastream-*/bin/* bin/
+      - name: Setup credentials
+        run: |
+          mkdir -p ~/.pulumi-deltastream
+          echo "${{ secrets.CI_CREDENTIALS_YAML }}" > examples/credentials.yaml
+      - name: Run tests
+        run: make install_sdks test
+
+  publish:
+    needs: [setup, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Setup Node.js with yarn
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@deltastream'
+          cache: 'yarn'
+      - name: Install Yarn
+        run: npm install -g yarn@1.22.22
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+      - name: Move artifacts to bin directory
+        run: |
+          mkdir -p bin
+          cp -r artifacts/pulumi-deltastream-*/bin/* bin/
+      - name: Publish to npm registry using yarn
+        run: |
+          cd sdk/nodejs
+          yarn version --new-version ${{ needs.setup.outputs.version }} --no-git-tag-version
+          yarn publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ needs.setup.outputs.version }}
+          files: |
+            artifacts/pulumi-deltastream-linux-amd64/bin/**
+            artifacts/pulumi-deltastream-linux-arm64/bin/**
+            artifacts/pulumi-deltastream-darwin-arm64/bin/**
+          tag_name: ${{ needs.setup.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
