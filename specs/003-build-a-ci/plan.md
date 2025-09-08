@@ -47,6 +47,12 @@ This feature implements GitHub Actions workflows for CI (Continuous Integration)
 - Upload a `yarn-lock` artifact containing only `sdk/nodejs/yarn.lock`
 - Download both artifacts in test and publish jobs before executing language installs or tests
 
+**Ordering & Executable Restoration Requirements**:
+To maximize Node.js/Yarn cache effectiveness and ensure restored binaries run correctly:
+- Artifact downloads MUST occur BEFORE any `actions/setup-node` invocation so that `cache-dependency-path: sdk/nodejs/yarn.lock` can leverage the restored lockfile.
+- After downloading artifacts, executable permission bits on files in `bin/` may be lost (depending on archive handling). A step must run `chmod +x bin/*` (guarded if directory exists) before those binaries are executed or packaged.
+- These steps are inserted immediately after artifact download and before any Node.js setup or test execution in CI test job, Release test job, and Release publish job.
+
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 

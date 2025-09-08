@@ -74,6 +74,7 @@ jobs:
         uses: pulumi/actions@v4
         with:
           pulumi-version: '>=3.182.0'
+      # Download artifacts BEFORE setting up Node to ensure yarn.lock is present for caching
       - name: Download provider build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -84,6 +85,9 @@ jobs:
         with:
           name: yarn-lock
           path: sdk/nodejs
+      - name: Restore executable permissions
+        run: |
+          if [ -d bin ]; then chmod +x bin/* || true; fi
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:

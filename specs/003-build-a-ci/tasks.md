@@ -91,13 +91,6 @@
         uses: pulumi/actions@v4
         with:
           pulumi-version: '>=3.182.0'
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'yarn'
-      - name: Install Yarn
-        run: npm install -g yarn@1.22.22
       - name: Download provider build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -108,6 +101,13 @@
         with:
           name: yarn-lock
           path: sdk/nodejs
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'yarn'
+      - name: Install Yarn
+        run: npm install -g yarn@1.22.22
       - name: Setup credentials
         run: |
           mkdir -p ~/.pulumi-deltastream
@@ -649,3 +649,4 @@ T018: "Ensure all required secrets are documented in README"
 - The complete workflow files in T015 and T016 serve as the final implementation
 - Security considerations are integrated throughout the tasks, especially in T003 and T005
 - Artifact strategy: Every job runs in a clean VM; required build outputs (`bin/**`, `schema.json`, generated `sdk/**`, and `sdk/nodejs/yarn.lock`) are transferred via upload/download artifacts. Release build uploads matrix-qualified names; `yarn.lock` only uploaded once.
+- Ordering & Executable Restoration: Download provider and yarn-lock artifacts BEFORE `actions/setup-node` so caching sees `sdk/nodejs/yarn.lock`. Immediately after download, restore execute bits with `chmod +x bin/* || true` (or path-qualified for release) before tests or publishing.
