@@ -1,0 +1,3 @@
+name: query-go
+runtime: go
+description: Query example copying from a stream into a changelog
