@@ -44,6 +44,19 @@ jobs:
           cache-dependency-path: sdk/nodejs/yarn.lock
       - name: Install Yarn
         run: npm install -g yarn@1.22.22
+      - name: Upload provider build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: provider-build
+          path: |
+            bin/**
+            schema.json
+            sdk/**
+      - name: Upload yarn.lock artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: yarn-lock
+          path: sdk/nodejs/yarn.lock
 
   test:
     needs: [setup, build]
@@ -61,6 +74,16 @@ jobs:
         uses: pulumi/actions@v4
         with:
           pulumi-version: '>=3.182.0'
+      - name: Download provider build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: provider-build
+          path: .
+      - name: Download yarn.lock artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: yarn-lock
+          path: sdk/nodejs
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:

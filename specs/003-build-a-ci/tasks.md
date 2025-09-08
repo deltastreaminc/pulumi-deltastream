@@ -58,6 +58,19 @@
         run: npm install -g yarn@1.22.22
       - name: Build
         run: make clean build schema generate build_sdks
+      - name: Upload provider build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: provider-build
+          path: |
+            bin/**
+            schema.json
+            sdk/**
+      - name: Upload yarn.lock artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: yarn-lock
+          path: sdk/nodejs/yarn.lock
   ```
 
 - [ ] T005 Configure test job with credentials setup in CI workflow
@@ -85,6 +98,16 @@
           cache: 'yarn'
       - name: Install Yarn
         run: npm install -g yarn@1.22.22
+      - name: Download provider build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: provider-build
+          path: .
+      - name: Download yarn.lock artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: yarn-lock
+          path: sdk/nodejs
       - name: Setup credentials
         run: |
           mkdir -p ~/.pulumi-deltastream
@@ -165,6 +188,20 @@
         run: npm install -g yarn@1.22.22
       - name: Build artifacts
         run: make build GOOS=${{ matrix.os == 'ubuntu-latest' && 'linux' || 'darwin' }} GOARCH=${{ matrix.arch }}
+      - name: Upload provider build artifacts (matrix)
+        uses: actions/upload-artifact@v4
+        with:
+          name: provider-build-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'darwin' }}-${{ matrix.arch }}
+          path: |
+            bin/**
+            schema.json
+            sdk/**
+      - name: Upload yarn.lock artifact
+        if: matrix.os == 'ubuntu-latest' && matrix.arch == 'amd64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: yarn-lock
+          path: sdk/nodejs/yarn.lock
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -216,6 +253,17 @@
           cache: 'yarn'
       - name: Install Yarn
         run: npm install -g yarn@1.22.22
+      - name: Download provider build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: provider-build-*
+          merge-multiple: true
+      - name: Download yarn.lock artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: yarn-lock
+          path: sdk/nodejs
       - name: Download all artifacts
         uses: actions/download-artifact@v3
         with:
@@ -250,6 +298,17 @@
           cache: 'yarn'
       - name: Install Yarn
         run: npm install -g yarn@1.22.22
+      - name: Download provider build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: provider-build-*
+          merge-multiple: true
+      - name: Download yarn.lock artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: yarn-lock
+          path: sdk/nodejs
       - name: Download all artifacts
         uses: actions/download-artifact@v3
         with:
@@ -589,3 +648,4 @@ T018: "Ensure all required secrets are documented in README"
 - Each task includes specific file paths or code snippets for clarity
 - The complete workflow files in T015 and T016 serve as the final implementation
 - Security considerations are integrated throughout the tasks, especially in T003 and T005
+- Artifact strategy: Every job runs in a clean VM; required build outputs (`bin/**`, `schema.json`, generated `sdk/**`, and `sdk/nodejs/yarn.lock`) are transferred via upload/download artifacts. Release build uploads matrix-qualified names; `yarn.lock` only uploaded once.

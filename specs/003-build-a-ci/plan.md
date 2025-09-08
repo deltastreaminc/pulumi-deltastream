@@ -42,6 +42,11 @@ This feature implements GitHub Actions workflows for CI (Continuous Integration)
 **Constraints**: Must not expose secrets to forked repositories, must follow GitHub Actions security best practices, macOS builds require code signing  
 **Scale/Scope**: Two GitHub Actions workflows (CI and Release) with appropriate configuration
 
+**Job Isolation & Artifact Passing**: Each GitHub Actions job runs in a clean environment. Build outputs required by downstream jobs (e.g., `bin/` provider binaries, `schema.json`, generated `sdk/` language SDKs, and `sdk/nodejs/yarn.lock`) MUST be persisted using `actions/upload-artifact` and restored with `actions/download-artifact`. Separate small artifacts (like `yarn.lock`) may improve cache reuse and review clarity. Workflows will:
+- Upload a consolidated provider build artifact (e.g., `provider-build` or matrix-qualified name in Release) containing: `bin/**`, `schema.json`, `sdk/**`
+- Upload a `yarn-lock` artifact containing only `sdk/nodejs/yarn.lock`
+- Download both artifacts in test and publish jobs before executing language installs or tests
+
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
