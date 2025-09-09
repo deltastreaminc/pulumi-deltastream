@@ -70,7 +70,7 @@ jobs:
         with:
           pulumi-version: '>=3.182.0'
       - name: Build artifacts
-        run: make build schema generate build_sdks GOOS=${{ matrix.os == 'ubuntu-latest' && 'linux' || 'darwin' }} GOARCH=${{ matrix.arch }}
+        run: VERSION=${{ needs.setup.outputs.version }} make build schema generate build_sdks
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -81,8 +81,8 @@ jobs:
         run: npm install -g yarn@1.22.22
       - name: Duplicate binary into OS-ARCH folder
         run: |
-          OS=${{ matrix.os == 'ubuntu-latest' && 'linux' || 'darwin' }}
-          ARCH=${{ matrix.arch }}
+          OS=$(go env GOOS)
+          ARCH=$(go env GOARCH)
           mkdir -p bin/${OS}-${ARCH}
           cp bin/pulumi-resource-deltastream bin/${OS}-${ARCH}/pulumi-resource-deltastream
       - name: Upload provider build artifacts
