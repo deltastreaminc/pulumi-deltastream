@@ -41,8 +41,6 @@ The Release workflow requires the following secrets to be set up in your GitHub 
 
 - `NPM_TOKEN`: Token for publishing to npm registry
 - `CI_CREDENTIALS_YAML`: YAML file containing credentials for integration tests
-- `APPLE_DEVELOPER_CERTIFICATE_P12_BASE64`: Base64-encoded Apple developer certificate
-- `APPLE_DEVELOPER_CERTIFICATE_PASSWORD`: Password for the Apple developer certificate
 - `APPLE_SIGNATURE_IDENTITY`: Identity used for code signing macOS binaries
 
 ### Creating a New Release

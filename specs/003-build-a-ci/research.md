@@ -35,6 +35,62 @@
 - Manual publishing: More control but defeats automation purpose
 - Custom publishing script: More flexible but increases complexity
 
+### Multi-Language Pulumi Provider Publishing (Archived vs Current vs Upstream Reference)
+
+**Context**: We compared three sources:
+- Archived reusable workflow (`main-archive/.github/workflows/publish.yml`): Two-phase reusable `workflow_call`, artifacts already packaged as versioned tarballs, checksum + schema diff generation, multi-language SDK publication (Node, Go; hooks for Java, .NET, Python) via `pulumi-package-publisher` and `publish-go-sdk-action`.
+- Current `release.yml`: Single linear workflow; builds raw binaries, publishes only Node.js SDK, uploads raw `bin/**` to GitHub Release, no tarballs, no checksums, no schema diff, no Python/Go commit action.
+- Upstream `pulumi/pulumi-aws` publish workflow: Canonical reference with provider tarballs, checksum file, schema diff summary embedded in release notes, multi-language SDK publish (nodejs, python, dotnet, go, java), post-publish verification and docs build dispatch.
+
+**Decisions**:
+- Reintroduce provider tarball packaging per OS/ARCH: `pulumi-resource-deltastream-v<version>-<os>-<arch>.tar.gz` containing binary + `schema.json` + licensing artifacts.
+- Generate and attach a consolidated SHA256 checksum file: `pulumi-deltastream_<version>_checksums.txt`.
+- Attach `schema.json` and (optionally) `schema-embed.json` explicitly to the release and produce a schema diff summary with `schema-tools compare` for release notes.
+- Add multi-language SDK publication steps: immediate support for Node.js, Go (with curated commit via `publish-go-sdk-action`), Python (wheel + sdist via `pulumi-package-publisher` or manual build). Leave .NET/Java optional but design tasks to allow easy enablement.
+- Introduce `isPrerelease` / draft handling to align with upstream pattern and allow safe preview releases.
+- Add a verification (smoke test) workflow invocation post-publish to validate installation across languages (mirrors `verify_release` job in aws provider).
+
+**Rationale**: Aligns with established Pulumi provider ecosystem patterns, improves consumer trust (integrity via checksums, visibility via schema diff), and simplifies future expansion to additional SDK languages without redesign.
+
+**Alternatives considered**:
+- Continue raw binary upload: Simpler but inconsistent with Pulumi tooling expectations; harder to integrate with automated installers.
+- Single giant artifact: Reduces artifact count but complicates distribution to end users and checksum verification granularity.
+- Skip schema diff: Faster, but loses automated change visibility and risk classification.
+
+### Python SDK Publishing (Deferred)
+
+**Decision**: Defer Python packaging/publishing for initial release scope; keep directory but exclude from automated pipeline.
+
+**Rationale**: Focus effort on stabilizing provider, Node.js, and Go flows first; reduces complexity and secret surface until Python demand materializes.
+
+**Alternatives considered**:
+- Immediate enablement (adds maintenance overhead now)
+- Removing directory entirely (loses future scaffold; harder to reintroduce)
+
+### Checksums & Integrity
+
+**Decision**: Use SHA256 sums over all tarballs; store in single text file, commit nothing back to repo (only release assets).
+
+**Rationale**: Standard practice; matches upstream; easy for users to verify downloads.
+
+**Alternatives considered**: GPG signatures (stronger assurance but requires key management) — deferred until external distribution channel demands it.
+
+### Schema Diff Automation
+
+**Decision**: Use `schema-tools compare` (as in archived & aws workflows) to append diff summary to release notes for stable releases; optional for prereleases.
+
+**Rationale**: Early detection of unintended breaking changes; communicates surface changes clearly.
+
+**Alternatives considered**: Manual changelog curation only (higher effort, risk of omissions); custom diff script (reinventing tooling already maintained upstream).
+
+### Verification Job Post-Publish
+
+**Decision**: Add separate `verify_release` (or similarly named) reusable workflow invocation after SDK publish to run minimal Pulumi programs in each language (Node, Go, Python) referencing the just-published version.
+
+**Rationale**: Catches packaging/version mismatches quickly; mirrors reliability practices of major Pulumi providers.
+
+**Alternatives considered**: Inline smoke tests inside publish job (less isolation, harder to rerun independently) or no verification (risk of latent release defects).
+
 ### Go Release Process
 
 **Decision**: Create git tags for Go releases without additional publishing steps, as Go modules are consumed directly from GitHub repositories.
