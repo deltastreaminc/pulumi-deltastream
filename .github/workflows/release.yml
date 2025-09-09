@@ -67,7 +67,7 @@ jobs:
         with:
           pulumi-version: '>=3.182.0'
       - name: Build artifacts
-        run: PROVIDER_VERSION=${{ needs.setup.outputs.version_no_v }} make build schema generate build_sdks
+        run: GOOS="${{ matrix.os == 'ubuntu-latest' && 'linux' || 'darwin' }}" GOARCH='${{ matrix.arch }}' PROVIDER_VERSION=${{ needs.setup.outputs.version_no_v }} make build schema generate build_sdks
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -155,17 +155,11 @@ jobs:
       - name: Download provider build artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: provider-build-*
-          path: artifacts
-          merge-multiple: true
-      - name: Download yarn.lock artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: yarn-lock
-          path: sdk/nodejs
+          name: provider-build-linux-amd64
+          path: .
       - name: Restore executable permissions
         run: |
-          if ls artifacts/bin/* 1> /dev/null 2>&1; then chmod +x artifacts/bin/* || true; fi
+          if ls bin/* 1> /dev/null 2>&1; then chmod +x bin/* || true; fi
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -174,10 +168,6 @@ jobs:
           cache-dependency-path: sdk/nodejs/yarn.lock
       - name: Install Yarn
         run: npm install -g yarn@1.22.22
-      - name: Move artifacts to bin directory
-        run: |
-          mkdir -p bin
-          find artifacts -type f -name pulumi-resource-deltastream -exec cp {} bin/ \;
       - name: Setup credentials
         run: |
           mkdir -p ~/.pulumi-deltastream
