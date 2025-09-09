@@ -36,6 +36,7 @@ func Provider() p.Provider {
 	b = b.WithDescription("A Pulumi provider for DeltaStream.")
 	b = b.WithHomepage("https://www.deltastream.io")
 	b = b.WithNamespace("deltastream")
+	b = b.WithPluginDownloadURL("github://api.github.com/deltastreaminc")
 	b = b.WithResources(
 		infer.Resource(Database{}),
 		infer.Resource(Namespace{}),

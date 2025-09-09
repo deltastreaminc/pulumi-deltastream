@@ -122,16 +122,27 @@ jobs:
             work=dist/pkg/work
             mkdir -p "$work"
             cp "$d/pulumi-resource-deltastream" "$work/pulumi-resource-deltastream"
+            chmod +x "$work/pulumi-resource-deltastream"
             if [ -f dist/raw/schema.json ]; then cp dist/raw/schema.json "$work/schema.json"; fi
             [ -f LICENSE ] && cp LICENSE "$work/" || true
             [ -f README.md ] && cp README.md "$work/" || true
-            tarball="pulumi-resource-deltastream-v${VERSION}-${OS}-${ARCH}.tar.gz"
+            tarball="pulumi-resource-deltastream-${VERSION}-${OS}-${ARCH}.tar.gz"
             tar -czf dist/pkg/${tarball} -C "$work" .
             rm -rf "$work"
           done
           (cd dist/pkg && shasum -a 256 pulumi-resource-deltastream-v*.tar.gz > pulumi-deltastream_${VERSION}_checksums.txt)
           # Copy schema.json standalone
           [ -f dist/raw/schema.json ] && cp dist/raw/schema.json dist/pkg/schema.json || true
+      - name: Build nodejs SDK tarball
+        run: |
+          set -euo pipefail
+          cd dist/raw
+          tar -zcf sdk/nodejs.tar.gz -C sdk/nodejs .
+      - name: Upload nodejs sdk artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nodejs-sdk.tar.gz
+          path: dist/raw/sdk/nodejs.tar.gz
       - name: Upload packaged artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -175,104 +186,98 @@ jobs:
       - name: Run tests
         run: make install_sdks test
 
-  # publish:
-  #   needs: [setup, package, test]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #     - name: Download provider packages
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: provider-packages
-  #         path: dist/pkg
-  #     - name: Download yarn.lock artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: yarn-lock
-  #         path: sdk/nodejs
-  #     - name: Setup Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: '20.x'
-  #         registry-url: 'https://registry.npmjs.org'
-  #         scope: '@deltastream'
-  #         cache: 'yarn'
-  #         cache-dependency-path: sdk/nodejs/yarn.lock
-  #     - name: Install Yarn
-  #       run: npm install -g yarn@1.22.22
-  #     - name: Publish Node SDK (package publisher)
-  #       uses: pulumi/pulumi-package-publisher@v0.0.22
-  #       with:
-  #         sdk: nodejs
-  #         version: ${{ needs.setup.outputs.version_no_v }}
-  #       env:
-  #         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-  #     - name: Setup Go for schema-tools & Go SDK publish
-  #       uses: actions/setup-go@v5
-  #       with:
-  #         go-version: '1.24.x'
-  #     - name: Install schema-tools
-  #       run: |
-  #         go install github.com/pulumi/schema-tools/cmd/schema-tools@latest
-  #         echo "$HOME/go/bin" >> $GITHUB_PATH
-  #     - name: Download provider build artifacts (for schema)
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         pattern: provider-build-*
-  #         path: dist/raw
-  #         merge-multiple: true
-  #     - name: Schema diff summary
-  #       id: schema_diff
-  #       run: |
-  #         LAST=$(gh release view --json tagName -q .tagName || echo 'NONE')
-  #         echo 'summary<<EOF' >> $GITHUB_OUTPUT
-  #         if [ "$LAST" != 'NONE' ]; then
-  #           if [ -f dist/raw/schema.json ]; then
-  #             schema-tools compare --provider deltastream --old-commit "$LAST" --repository github://api.github.com/deltastreaminc --new-commit --local-path=dist/raw/schema.json || true
-  #           fi
-  #         fi
-  #         echo 'EOF' >> $GITHUB_OUTPUT
-  #     - name: Publish Go SDK
-  #       uses: pulumi/publish-go-sdk-action@v1
-  #       with:
-  #         repository: ${{ github.repository }}
-  #         base-ref: ${{ github.sha }}
-  #         source: sdk
-  #         path: sdk
-  #         version: ${{ needs.setup.outputs.version_no_v }}
-  #         additive: false
-  #         files: |
-  #           go.*
-  #           go/**
-  #           !*.tar.gz
-  #     - name: Create GitHub Release (packaged)
-  #       uses: softprops/action-gh-release@v2
-  #       with:
-  #         tag_name: ${{ needs.setup.outputs.version }}
-  #         name: Release ${{ needs.setup.outputs.version }}
-  #         prerelease: ${{ needs.setup.outputs.is_prerelease == 'true' }}
-  #         draft: ${{ needs.setup.outputs.is_prerelease == 'true' }}
-  #         body: ${{ steps.schema_diff.outputs.summary }}
-  #         files: |
-  #           dist/pkg/pulumi-resource-deltastream-v*.tar.gz
-  #           dist/pkg/pulumi-deltastream_*_checksums.txt
-  #           dist/pkg/schema.json
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  publish:
+    needs: [setup, package, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Go for schema-tools & Go SDK publish
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+      - name: Install pulumictl
+        uses: jaxxstorm/action-install-gh-release@6096f2a2bbfee498ced520b6922ac2c06e990ed2 # v2.1.0
+        with:
+          tag: v0.0.46
+          repo: pulumi/pulumictl
+      - name: Install Schema Tools
+        uses: jaxxstorm/action-install-gh-release@6096f2a2bbfee498ced520b6922ac2c06e990ed2 # v2.1.0
+        with:
+          repo: pulumi/schema-tools
+      - name: Download provider packages
+        uses: actions/download-artifact@v4
+        with:
+          name: provider-packages
+          path: dist/pkg
+      - name: Configure npm
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+      - name: Publish Node SDK (package publisher)
+        uses: pulumi/pulumi-package-publisher@v0.0.22
+        with:
+          sdk: nodejs
+          version: ${{ needs.setup.outputs.version_no_v }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Download provider build artifacts (for schema)
+        uses: actions/download-artifact@v4
+        with:
+          pattern: provider-build-*
+          path: dist/raw
+          merge-multiple: true
+      - name: Schema diff summary
+        id: schema_diff
+        run: |
+          LAST=$(gh release view --json tagName -q .tagName || echo 'NONE')
+          echo 'summary<<EOF' >> $GITHUB_OUTPUT
+          if [ "$LAST" != 'NONE' ]; then
+            if [ -f dist/raw/schema.json ]; then
+              schema-tools compare --provider deltastream --old-commit "$LAST" --repository github://api.github.com/deltastreaminc --new-commit --local-path=dist/raw/schema.json || true
+            fi
+          fi
+          echo 'EOF' >> $GITHUB_OUTPUT
+      # - name: Publish Go SDK
+      #   uses: pulumi/publish-go-sdk-action@v1
+      #   with:
+      #     repository: ${{ github.repository }}
+      #     base-ref: ${{ github.sha }}
+      #     source: sdk
+      #     path: sdk
+      #     version: ${{ needs.setup.outputs.version_no_v }}
+      #     additive: false
+      #     files: |
+      #       go.*
+      #       go/**
+      #       !*.tar.gz
+      - name: Create GitHub Release (packaged)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.setup.outputs.version }}
+          name: Release ${{ needs.setup.outputs.version }}
+          prerelease: ${{ needs.setup.outputs.is_prerelease == 'true' }}
+          draft: ${{ needs.setup.outputs.is_prerelease == 'true' }}
+          body: ${{ steps.schema_diff.outputs.summary }}
+          files: |
+            dist/pkg/pulumi-resource-deltastream-v*.tar.gz
+            dist/pkg/pulumi-deltastream_*_checksums.txt
+            dist/pkg/schema.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # verify:
-  #   needs: [setup, publish]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Node smoke test
-  #       run: |
-  #         npm init -y >/dev/null 2>&1
-  #         npm install @deltastream/pulumi-deltastream@${{ needs.setup.outputs.version_no_v }}
-  #         node -e "require('@deltastream/pulumi-deltastream'); console.log('Node SDK ok')"
-  #     - name: Go smoke test
-  #       run: |
-  #         go mod init verify || true
-  #         go get github.com/deltastreaminc/pulumi-deltastream/sdk/go/pulumi-deltastream@${{ needs.setup.outputs.version }}
-  #         echo 'package main; import _ "github.com/deltastreaminc/pulumi-deltastream/sdk/go/pulumi-deltastream"; func main(){}' > main.go
-  #         go build ./...
+  verify:
+    needs: [setup, publish]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Node smoke test
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install @deltastream/pulumi-deltastream@${{ needs.setup.outputs.version_no_v }}
+          node -e "require('@deltastream/pulumi-deltastream'); console.log('Node SDK ok')"
+      # - name: Go smoke test
+      #   run: |
+      #     go mod init verify || true
+      #     go get github.com/deltastreaminc/pulumi-deltastream/sdk/go/pulumi-deltastream@${{ needs.setup.outputs.version }}
+      #     echo 'package main; import _ "github.com/deltastreaminc/pulumi-deltastream/sdk/go/pulumi-deltastream"; func main(){}' > main.go
+      #     go build ./...

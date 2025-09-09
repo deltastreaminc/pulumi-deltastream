@@ -57,10 +57,13 @@ func validatePostgresInputs(pg *PostgresInputs) []p.CheckFailure {
 
 // storePostgresCreate issues a CREATE STORE statement for Postgres including
 // normalization of host URIs and TLS flags.
-func storePostgresCreate(ctx context.Context, conn *sql.Conn, input *StoreArgs) error {
+func storePostgresCreate(ctx context.Context, conn *sql.Conn, input *StoreArgs) (err error) {
 	pg := input.Postgres
 	// normalize URIs (comma separated) to ensure each host has a port
-	pg.Uris = normalizePostgresUris(pg.Uris)
+	pg.Uris, err = normalizePostgresUris(ctx, pg.Uris)
+	if err != nil {
+		return err
+	}
 	params := []string{"'type' = POSTGRESQL"}
 	params = append(params, fmt.Sprintf("'postgres.username' = '%s'", escapeSQL(pg.Username)))
 	params = append(params, fmt.Sprintf("'postgres.password' = '%s'", escapeSQL(pg.Password)))
@@ -108,16 +111,22 @@ func storePostgresUpdate(ctx context.Context, req infer.UpdateRequest[StoreArgs,
 
 	changes := map[string]string{}
 	if req.Inputs.Postgres.Username != req.State.Postgres.Username {
-		changes["postgres.username"] = req.Inputs.Postgres.Username
+		changes["postgres.username"] = quoteString(req.Inputs.Postgres.Username)
 	}
 	if req.Inputs.Postgres.Password != req.State.Postgres.Password {
-		changes["postgres.password"] = req.Inputs.Postgres.Password
+		changes["postgres.password"] = quoteString(req.Inputs.Postgres.Password)
 	}
 	// normalize both sides for fair comparison
-	newUris := normalizePostgresUris(req.Inputs.Postgres.Uris)
-	oldUris := normalizePostgresUris(req.State.Postgres.Uris)
+	newUris, err := normalizePostgresUris(ctx, req.Inputs.Postgres.Uris)
+	if err != nil {
+		return infer.UpdateResponse[StoreState]{}, err
+	}
+	oldUris, err := normalizePostgresUris(ctx, req.State.Postgres.Uris)
+	if err != nil {
+		return infer.UpdateResponse[StoreState]{}, err
+	}
 	if newUris != oldUris {
-		changes["uris"] = newUris
+		changes["uris"] = quoteString(newUris)
 		req.Inputs.Postgres.Uris = newUris
 	} else {
 		req.Inputs.Postgres.Uris = oldUris
@@ -126,7 +135,7 @@ func storePostgresUpdate(ctx context.Context, req infer.UpdateRequest[StoreArgs,
 	curTD, oldTD := req.Inputs.Postgres.TlsDisabled, req.State.Postgres.TlsDisabled
 	if (curTD == nil) != (oldTD == nil) || (curTD != nil && oldTD != nil && *curTD != *oldTD) {
 		if curTD == nil {
-			changes["tls.disabled"] = "NULL"
+			changes["tls.disabled"] = "FALSE"
 		} else if *curTD {
 			changes["tls.disabled"] = "TRUE"
 			// force verify_server_hostname false when disabled
@@ -150,7 +159,7 @@ func storePostgresUpdate(ctx context.Context, req infer.UpdateRequest[StoreArgs,
 	if len(changes) > 0 {
 		parts := []string{}
 		for k, v := range changes {
-			parts = append(parts, fmt.Sprintf("'%s' = '%s'", k, escapeSQL(v)))
+			parts = append(parts, fmt.Sprintf("'%s' = %s", k, escapeSQL(v)))
 		}
 		stmt := fmt.Sprintf("UPDATE STORE %s WITH (%s);", quoteIdent(req.ID), joinComma(parts))
 		if _, err := conn.ExecContext(ctx, stmt); err != nil {
@@ -176,7 +185,15 @@ func storePostgresDiff(ctx context.Context, req infer.DiffRequest[StoreArgs, Sto
 	if req.Inputs.Postgres.Password != req.State.Postgres.Password {
 		diff["postgres.password"] = p.PropertyDiff{Kind: p.Update}
 	}
-	if normalizePostgresUris(req.Inputs.Postgres.Uris) != normalizePostgresUris(req.State.Postgres.Uris) {
+	old, err := normalizePostgresUris(ctx, req.State.Postgres.Uris)
+	if err != nil {
+		return infer.DiffResponse{}, err
+	}
+	new, err := normalizePostgresUris(ctx, req.Inputs.Postgres.Uris)
+	if err != nil {
+		return infer.DiffResponse{}, err
+	}
+	if new != old {
 		diff["postgres.uris"] = p.PropertyDiff{Kind: p.Update}
 	}
 	if (req.Inputs.Postgres.TlsDisabled == nil) != (req.State.Postgres.TlsDisabled == nil) || (req.Inputs.Postgres.TlsDisabled != nil && req.State.Postgres.TlsDisabled != nil && *req.Inputs.Postgres.TlsDisabled != *req.State.Postgres.TlsDisabled) {
@@ -208,34 +225,52 @@ func joinComma(parts []string) string {
 // inside single-quoted SQL literal contexts.
 func escapeSQL(s string) string { return strings.ReplaceAll(s, "'", "''") }
 
-// normalizePostgresUris ensures each host segment has a port; accepts comma-separated
-// entries which may be plain host[:port] or fully qualified postgres:// URLs. Invalid
-// entries are passed through unchanged to avoid surprising user transformations.
-func normalizePostgresUris(in string) string {
+func normalizePostgresUris(ctx context.Context, in string) (string, error) {
+	logger := p.GetLogger(ctx)
 	if strings.TrimSpace(in) == "" {
-		return in
+		return "", fmt.Errorf("postgres uris cannot be empty")
 	}
 	parts := strings.Split(in, ",")
-	for i, raw := range parts {
-		original := strings.TrimSpace(raw)
-		if original == "" {
-			continue
-		}
-		seg := original
-		if !strings.Contains(seg, "://") { // ensure scheme
-			seg = "postgres://" + seg
-		}
-		u, err := url.Parse(seg)
-		if err != nil || u.Host == "" { // leave as-is on parse failure
-			parts[i] = original
-			continue
-		}
-		host := u.Host
-		if !strings.Contains(host, ":") { // add default port
-			host += ":5432"
-		}
-		u.Host = host
-		parts[i] = u.String()
+	if len(parts) > 1 {
+		logger.Info("postgres store was provided multiple uris; using the first one only")
 	}
-	return strings.Join(parts, ",")
+
+	seg := strings.TrimSpace(parts[0])
+	if !strings.Contains(seg, "://") { // ensure scheme
+		seg = "postgresql://" + seg
+	}
+
+	u, err := url.Parse(seg)
+	if err != nil || u.Host == "" { // leave as-is on parse failure
+		return "", fmt.Errorf("invalid postgres uri: %w", err)
+	}
+	host := u.Host
+	if u.Port() == "" {
+		host = u.Hostname() + ":5432"
+	}
+	u.Host = host
+
+	// Path should contain the database name (e.g., /mydb)
+	if u.Path == "" || u.Path == "/" {
+		return "", fmt.Errorf("postgres uri must include a database name")
+	}
+
+	// Remove leading and trailing slashes and split by slash to get path segments
+	trimmedPath := strings.Trim(u.Path, "/")
+	if trimmedPath == "" {
+		return "", fmt.Errorf("postgres uri must include a database name")
+	}
+
+	segments := strings.Split(trimmedPath, "/")
+
+	// First segment is the database name
+	dbName := segments[0]
+	if len(segments) > 1 {
+		logger.Info(fmt.Sprintf("postgres uri contained multiple path segments; using %s as database name", dbName))
+	}
+
+	// Set the path to just the database name
+	u.Path = "/" + dbName
+
+	return u.String(), nil
 }

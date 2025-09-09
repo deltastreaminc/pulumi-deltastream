@@ -3,6 +3,7 @@
   "displayName": "pulumi-deltastream",
   "description": "A Pulumi provider for DeltaStream.",
   "homepage": "https://www.deltastream.io",
+  "pluginDownloadURL": "github://api.github.com/deltastreaminc",
   "namespace": "deltastream",
   "meta": {
     "moduleFormat": "(.*)"

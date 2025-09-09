@@ -63,6 +63,7 @@ build_nodejs:
 		cd sdk/nodejs && \
 		( command -v yarn >/dev/null 2>&1 || (echo "yarn not found; please install yarn" && exit 1) ) && \
 		yarn install && yarn run build; \
+		cp ../../README.md ../../LICENSE package.json yarn.lock ./bin/; \
 	else \
 		echo "sdk/nodejs not found; run 'make generate_nodejs' first"; \
 		exit 1; \

@@ -32,7 +32,9 @@ examples/credentials.yaml
 .config/
 
 # Generated SDK files
-sdk/*/
+!sdk/nodejs/.gitkeep
+sdk/nodejs/
+sdk/python/
 
 # Temporary files
 .tmp/
