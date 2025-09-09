@@ -140,5 +140,5 @@ jobs:
 - NPM_TOKEN secret used only in the publish step
 - GITHUB_TOKEN used with minimal required permissions
 - No secrets exposed in build artifacts or logs
-- Apple signing secrets (APPLE_DEVELOPER_CERTIFICATE_P12_BASE64, APPLE_DEVELOPER_CERTIFICATE_PASSWORD, APPLE_SIGNATURE_IDENTITY) used only for macOS builds
+  (Apple signing secrets removed; macOS binaries are unsigned.)
 - CI_CREDENTIALS_YAML secret used only for running tests

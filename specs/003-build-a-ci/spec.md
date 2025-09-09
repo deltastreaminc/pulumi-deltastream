@@ -13,8 +13,9 @@ As a contributor to the Pulumi Deltastream provider, I want automated CI/CD work
 ### Acceptance Scenarios
 1. **Given** a contributor creates a pull request, **When** the CI workflow runs, **Then** all tests are executed and results are reported on the PR without exposing secrets.
 2. **Given** a maintainer merges code to the main branch, **When** the Release workflow is triggered, **Then** all tests are executed and results are recorded against the commit.
-3. **Given** a maintainer tags a revision on the main branch, **When** a new release is automatically created, packaged, and published to the appropriate distribution channels.
-3. **Given** a fork submits a pull request, **When** the CI workflow runs, **Then** tests do not run automatically but can be triggered by repo members.
+3. **Given** a maintainer tags a revision on the main branch, **When** the Release workflow runs, **Then** versioned provider tarballs, checksum file, schema, and supported SDKs (Node.js, Go) are produced and published.
+4. **Given** a fork submits a pull request, **When** the CI workflow runs, **Then** tests do not run automatically but can be triggered by repo members.
+5. **Given** a release completes, **When** post-publish verification runs, **Then** minimal programs for Node.js and Go succeed using the just-published version.
 
 ### Edge Cases
 - What happens when tests fail during a CI run?
@@ -36,13 +37,23 @@ As a contributor to the Pulumi Deltastream provider, I want automated CI/CD work
 - **FR-003**: CI workflow MUST prevent exposure of repository secrets to forked repositories.
 - **FR-004**: CI workflow MUST run unit tests, integration tests, and code quality checks.
 - **FR-005**: CI workflow MUST report test results back to the pull request.
-**FR-006**: Release workflow MUST generate appropriate artifacts for all supported platforms: linux x86_64, linux arm64, and darwin arm64.
-**FR-007**: Release workflow MUST handle versioning according to semantic versioning principles.
-**FR-008**: Release workflow MUST publish npm packages to @deltastream/pulumi-deltastream and create a git tag for Go releases (no additional publishing required for Go).
-- **FR-009**: Both workflows MUST follow GitHub Actions security best practices to protect sensitive information.
-	- For npm: Published to @deltastream/pulumi-deltastream
-	- For Go: Git tag created, no external publishing
-	- Platforms: linux x86_64, linux arm64, darwin arm64
+**FR-006**: Release workflow MUST generate artifacts for linux amd64, linux arm64, and darwin arm64 (matching pulumi/pulumi-aws platform set sans signed binaries).
+**FR-007**: Release workflow MUST package provider binaries as tarballs named `pulumi-resource-deltastream-v<version>-<os>-<arch>.tar.gz` and produce a consolidated SHA256 checksum file (align with pulumi/pulumi-aws format).
+**FR-008**: Release workflow MUST attach `schema.json` and include a schema diff summary in release notes (skip diff if first release or prerelease).
+**FR-009**: Release workflow MUST publish the Node.js SDK via `pulumi/pulumi-package-publisher@v0.0.22` (with `sdk: nodejs`).
+**FR-010**: Release workflow MUST publish the Go SDK via `pulumi/publish-go-sdk-action@v1` after Node publish succeeds.
+**FR-011**: Release workflow MUST support prerelease (draft) handling via `isPrerelease` flag and treat semantic versions containing a hyphen as prereleases automatically.
+**FR-012**: Release workflow MUST run a post-publish verification job executing smoke tests for Node.js and Go using the just-published versions.
+**FR-013**: Version normalization MUST strip leading `v` for package metadata while preserving `v` for git tags (Node.js & Go fetch logic).
+**FR-014**: Both workflows MUST follow GitHub Actions security best practices to protect sensitive information (fork PR secret isolation, least-privilege tokens).
+**FR-015**: Release workflow MUST remove macOS code signing steps present in earlier iteration and produce unsigned darwin arm64 binaries (mirrors current pulumi/pulumi-aws approach for unsigned community providers).
+**FR-016**: Release workflow SHOULD minimize bespoke logic by delegating Node packaging/publish to the package publisher action (single step replacing manual version bump + yarn publish) while retaining local tarball & checksum generation for provider distribution.
+**FR-017**: Release workflow MUST fail fast if the package publisher action reports an error (subsequent Go publish and release creation MUST not proceed).
+- **FR-018**: Documentation MUST indicate that adding future languages (.NET, Python, Java) would extend the `sdk:` parameter of the publisher action, not reintroduce bespoke publish steps.
+	- Node: Published via package publisher composite action
+	- Go: Git tag already exists (trigger) and curated Go SDK commit via publish-go-sdk action
+	- Future languages: Extend publisher action `sdk:` input
+	- Platforms: linux amd64, linux arm64, darwin arm64 (unsigned)
 - **GitHub Workflow**: Definition of automated processes that run on GitHub events (PR creation, merge to main, etc.)
 - **GitHub Secret**: Sensitive information stored securely in the repository settings, used by workflows.
 - **Release Artifact**: Built packages, binaries, or other files that are published as part of a release.

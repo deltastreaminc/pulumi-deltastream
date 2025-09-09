@@ -29,7 +29,14 @@
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-This feature implements GitHub Actions workflows for CI (Continuous Integration) and Release processes for the Pulumi Deltastream provider. The CI workflow will run builds for all pull requests and tests for trusted pull requests, ensuring code quality without exposing secrets to forked repositories. The Release workflow will automatically create and publish releases when triggered, generating artifacts for supported platforms (linux x86_64, linux arm64, darwin arm64) and publishing to appropriate channels (npm package for Node.js, git tag for Go).
+This feature implements GitHub Actions workflows for CI (PR validation) and Release (tag-driven provider distribution). CI builds for all PRs and conditionally runs tests for trusted contexts without leaking secrets. The Release pipeline now aligns more closely with `pulumi/pulumi-aws` patterns while intentionally scoped to Node.js and Go:
+1. Build (matrix: linux amd64/arm64, darwin arm64) → provider binaries, schema, generated SDKs (unsigned macOS)
+2. Package → provider tarballs + consolidated checksum + standalone schema.json
+3. Test → integration tests with built provider (no secrets for forks)
+4. Publish → Node SDK via `pulumi/pulumi-package-publisher@v0.0.22` (sdk: nodejs); Go SDK via `pulumi/publish-go-sdk-action@v1`
+5. Release → GitHub Release creation (assets: tarballs, checksum, schema) + schema diff summary
+6. Verify → smoke tests (Node import, Go module fetch/build)
+7. Future → Add additional languages by extending publisher action `sdk:` input (Python/.NET/Java deferred)
 
 ## Technical Context
 **Language/Version**: YAML (GitHub Actions workflow syntax), Go 1.24.x, Node.js 20.x  
@@ -39,19 +46,21 @@ This feature implements GitHub Actions workflows for CI (Continuous Integration)
 **Target Platform**: GitHub Actions CI/CD platform  
 **Project Type**: Infrastructure automation (GitHub Actions workflows)  
 **Performance Goals**: CI workflow completes within 15 minutes, Release workflow within 30 minutes  
-**Constraints**: Must not expose secrets to forked repositories, must follow GitHub Actions security best practices, macOS builds require code signing  
+**Constraints**: Must not expose secrets to forked repositories, must follow GitHub Actions security best practices, macOS binaries remain unsigned (code signing intentionally removed)  
 **Scale/Scope**: Two GitHub Actions workflows (CI and Release) with appropriate configuration
 
-**Job Isolation & Artifact Passing**: Each GitHub Actions job runs in a clean environment. Build outputs required by downstream jobs (e.g., `bin/` provider binaries, `schema.json`, generated `sdk/` language SDKs, and `sdk/nodejs/yarn.lock`) MUST be persisted using `actions/upload-artifact` and restored with `actions/download-artifact`. Separate small artifacts (like `yarn.lock`) may improve cache reuse and review clarity. Workflows will:
-- Upload a consolidated provider build artifact (e.g., `provider-build` or matrix-qualified name in Release) containing: `bin/**`, `schema.json`, `sdk/**`
-- Upload a `yarn-lock` artifact containing only `sdk/nodejs/yarn.lock`
-- Download both artifacts in test and publish jobs before executing language installs or tests
+**Job Isolation & Artifact Passing**: Each job runs in a clean VM. Outputs (binaries, `schema.json`, generated SDKs, `yarn.lock`) are persisted with `actions/upload-artifact` and restored downstream. Packaging stage converts raw `bin/` outputs into versioned tarballs for distribution; Node SDK publication is delegated to the package publisher action (eliminating manual version bump/publish logic).
+Workflows will:
+- Upload matrix-scoped build artifacts containing raw build outputs (`bin/**`, `schema.json`, `sdk/**`).
+- (Packaging step) Produce tarballs: `pulumi-resource-deltastream-v<version>-<os>-<arch>.tar.gz` plus `pulumi-deltastream_<version>_checksums.txt`.
+- Upload `yarn-lock` separately for restore + Yarn cache priming.
+- Attach schema & checksums in release job.
 
 **Ordering & Executable Restoration Requirements**:
-To maximize Node.js/Yarn cache effectiveness and ensure restored binaries run correctly:
-- Artifact downloads MUST occur BEFORE any `actions/setup-node` invocation so that `cache-dependency-path: sdk/nodejs/yarn.lock` can leverage the restored lockfile.
-- After downloading artifacts, executable permission bits on files in `bin/` may be lost (depending on archive handling). A step must run `chmod +x bin/*` (guarded if directory exists) before those binaries are executed or packaged.
-- These steps are inserted immediately after artifact download and before any Node.js setup or test execution in CI test job, Release test job, and Release publish job.
+- Download artifacts BEFORE `actions/setup-node` so caching sees restored `yarn.lock`.
+- Restore execute bits (`chmod +x`) immediately after artifact retrieval.
+- Perform packaging (tar + checksum) only after successful build (no signing) but before publisher & Go SDK steps.
+- Schema diff generation occurs after packaging (schema immutable post-build) and before release creation.
 
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
@@ -110,7 +119,7 @@ specs/003-build-a-ci/
 
 **Structure Decision**: GitHub Actions workflow files in the standard .github/workflows directory
 
-## Phase 0: Outline & Research
+## Phase 0: Outline & Research (Augmented)
 1. **Extract unknowns from Technical Context** above:
    - GitHub Actions security best practices for forked repositories
    - Multi-platform artifact generation strategies
@@ -118,12 +127,13 @@ specs/003-build-a-ci/
    - Go release process requirements
    - Workflow trigger configuration options
 
-2. **Generate and dispatch research agents**:
+2. **Generate and dispatch research agents** (augmented with provider publish patterns):
    ```
    Task: "Research GitHub Actions security best practices for forked repositories"
    Task: "Research artifact generation strategies for multiple platforms in GitHub Actions"
    Task: "Research automated npm package publishing in GitHub Actions"
    Task: "Research Go release process best practices"
+   Task: "Research Pulumi multi-language provider publish patterns (tarballs, checksums, schema diff, verification)"
    Task: "Research GitHub Actions workflow trigger configuration options"
    ```
 
@@ -134,7 +144,7 @@ specs/003-build-a-ci/
 
 **Output**: research.md with all topics researched and documented
 
-## Phase 1: Design & Contracts
+## Phase 1: Design & Contracts (Augmented)
 *Prerequisites: research.md complete*
 
 1. **Extract entities from feature spec** → `data-model.md`:
@@ -144,9 +154,11 @@ specs/003-build-a-ci/
    - Job structures and dependencies
 
 2. **Generate API contracts** from functional requirements:
-   - CI workflow contract with event triggers and job structure
-   - Release workflow contract with event triggers and job structure
-   - Security considerations for both workflows
+   - CI workflow contract (triggers, fork handling, test gating)
+   - Release workflow contract (phased: build, package, test, publish, release, verify)
+   - Packaging contract (tarball naming, checksum generation, schema attachment)
+   - SDK publish contract (language matrix, version normalization, prerelease handling)
+   - Security & integrity contract (checksums, schema diff, secret scoping)
 
 3. **Generate contract tests** from contracts:
    - Test scenarios for CI workflow
@@ -159,10 +171,11 @@ specs/003-build-a-ci/
    - Creating a release with git tag
    - Manually triggering workflows
 
-5. **Create quickstart guide** for user reference:
-   - How to use CI workflow for PRs
-   - How to create releases
-   - Troubleshooting common issues
+5. **Create quickstart guide** (updated):
+   - CI usage & fork testing
+   - Release phases & artifact expectations
+   - Adding a new SDK language
+   - Verifying integrity (checksums, schema diff)
 
 **Output**: 
 - data-model.md: Documents the workflow entities and their properties
