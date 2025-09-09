@@ -23,6 +23,8 @@ SCHEMA_FILE := schema.json
 # Pulumi CLI is now provided by CI (pulumi/actions) or developer environment.
 PULUMI ?= pulumi
 
+BUILD_OS ?= $(shell go env GOOS)
+BUILD_ARCH ?= $(shell go env GOARCH)
 
 define require_pulumi
     @ command -v $(PULUMI) >/dev/null 2>&1 || { echo "Pulumi CLI not found in PATH; install via pulumi/actions or local package." >&2; exit 1; }
@@ -37,7 +39,7 @@ build: provider
 .FORCE:
 provider: .FORCE bin/$(PROVIDER)
 bin/$(PROVIDER):
-	cd provider && GOOS=$$(go env GOOS) GOARCH=$$(go env GOARCH) CGO_ENABLED=0 go build $(PULUMI_PROVIDER_BUILD_PARALLELISM) -o "$(WORKING_DIR)/bin/$(PROVIDER)" -ldflags "$(LDFLAGS)" $(PROJECT)/cmd/$(PROVIDER)
+	cd provider && GOOS=$(BUILD_OS) GOARCH=$(BUILD_ARCH) CGO_ENABLED=0 go build $(PULUMI_PROVIDER_BUILD_PARALLELISM) -o "$(WORKING_DIR)/bin/$(PROVIDER)" -ldflags "$(LDFLAGS)" $(PROJECT)/cmd/$(PROVIDER)
 
 .PHONY: schema
 schema: .make/schema
@@ -45,7 +47,8 @@ schema: .make/schema
 .make/schema: provider
 	$(call require_pulumi)
 	mkdir -p .make
-	$(PULUMI) package get-schema $(WORKING_DIR)/bin/$(PROVIDER) | jq 'del(.version) | .language.go.importBasePath = "$(PROJECT)/sdk/go/pulumi-$(PACK)" | .language.nodejs.packageName = "$(NODE_MODULE_NAME)"' > $(SCHEMA_FILE)
+	go build -o ".make/$(PROVIDER)" -ldflags "$(LDFLAGS)" $(PROJECT)/cmd/$(PROVIDER)
+	$(PULUMI) package get-schema .make/$(PROVIDER) | jq 'del(.version) | .language.go.importBasePath = "$(PROJECT)/sdk/go/pulumi-$(PACK)" | .language.nodejs.packageName = "$(NODE_MODULE_NAME)"' > $(SCHEMA_FILE)
 	@touch $@
 
 .PHONY: generate

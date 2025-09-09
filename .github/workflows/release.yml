@@ -67,7 +67,7 @@ jobs:
         with:
           pulumi-version: '>=3.182.0'
       - name: Build artifacts
-        run: GOOS="${{ matrix.os == 'ubuntu-latest' && 'linux' || 'darwin' }}" GOARCH='${{ matrix.arch }}' PROVIDER_VERSION=${{ needs.setup.outputs.version_no_v }} make build schema generate build_sdks
+        run: BUILD_OS="${{ matrix.os == 'ubuntu-latest' && 'linux' || 'darwin' }}" BUILD_ARCH='${{ matrix.arch }}' PROVIDER_VERSION=${{ needs.setup.outputs.version_no_v }} make build schema generate build_sdks
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
