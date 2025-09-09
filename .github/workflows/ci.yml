@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Check if PR is from fork
         id: check
-        run: echo "is_fork=${{ github.event.pull_request.head.repo.full_name != github.repository }}" >> $GITHUB_OUTPUT
+        run: echo "is_fork=${{ github.event.pull_request.head.repo.full_name != github.repository }}" >> "$GITHUB_OUTPUT"
 
   build:
     needs: setup
@@ -25,13 +25,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.24.x'
       - name: Setup Pulumi
-        uses: pulumi/actions@v4
+        uses: pulumi/actions@v5
         with:
           pulumi-version: '>=3.182.0'
       - name: Build
@@ -41,8 +41,22 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'yarn'
+          cache-dependency-path: sdk/nodejs/yarn.lock
       - name: Install Yarn
         run: npm install -g yarn@1.22.22
+      - name: Upload provider build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: provider-build
+          path: |
+            bin/**
+            schema.json
+            sdk/**
+      - name: Upload yarn.lock artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: yarn-lock
+          path: sdk/nodejs/yarn.lock
 
   test:
     needs: [setup, build]
@@ -51,20 +65,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.24.x'
       - name: Setup Pulumi
-        uses: pulumi/actions@v4
+        uses: pulumi/actions@v5
         with:
           pulumi-version: '>=3.182.0'
+      # Download artifacts BEFORE setting up Node to ensure yarn.lock is present for caching
+      - name: Download provider build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: provider-build
+          path: .
+      - name: Download yarn.lock artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: yarn-lock
+          path: sdk/nodejs
+      - name: Restore executable permissions
+        run: |
+          if [ -d bin ]; then chmod +x bin/* || true; fi
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'yarn'
+          cache-dependency-path: sdk/nodejs/yarn.lock
       - name: Install Yarn
         run: npm install -g yarn@1.22.22
       - name: Setup credentials
@@ -73,3 +102,11 @@ jobs:
           echo "${{ secrets.CI_CREDENTIALS_YAML }}" > examples/credentials.yaml
       - name: Run tests
         run: make install_sdks test
+      - name: Upload Go command-output logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-command-output-logs
+          path: ~/go/src/**/command-output/*
+          if-no-files-found: ignore
+          retention-days: 5

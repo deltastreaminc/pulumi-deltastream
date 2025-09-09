@@ -28,6 +28,8 @@ define require_pulumi
     @ command -v $(PULUMI) >/dev/null 2>&1 || { echo "Pulumi CLI not found in PATH; install via pulumi/actions or local package." >&2; exit 1; }
 endef
 
+all: build schema generate build_sdks
+
 .PHONY: build provider .FORCE
 build: provider
 
