@@ -65,9 +65,9 @@ func storePostgresCreate(ctx context.Context, conn *sql.Conn, input *StoreArgs) 
 		return err
 	}
 	params := []string{"'type' = POSTGRESQL"}
-	params = append(params, fmt.Sprintf("'postgres.username' = '%s'", escapeSQL(pg.Username)))
-	params = append(params, fmt.Sprintf("'postgres.password' = '%s'", escapeSQL(pg.Password)))
-	params = append(params, fmt.Sprintf("'uris' = '%s'", escapeSQL(pg.Uris)))
+	params = append(params, fmt.Sprintf("'postgres.username' = %s", quoteString(pg.Username)))
+	params = append(params, fmt.Sprintf("'postgres.password' = %s", quoteString(pg.Password)))
+	params = append(params, fmt.Sprintf("'uris' = %s", quoteString(pg.Uris)))
 	if pg.TlsDisabled != nil {
 		if *pg.TlsDisabled {
 			params = append(params, "'tls.disabled' = TRUE")
@@ -129,7 +129,7 @@ func storePostgresUpdate(ctx context.Context, req infer.UpdateRequest[StoreArgs,
 		changes["uris"] = quoteString(newUris)
 		req.Inputs.Postgres.Uris = newUris
 	} else {
-		req.Inputs.Postgres.Uris = oldUris
+		req.Inputs.Postgres.Uris = newUris
 	}
 	// TLS booleans
 	curTD, oldTD := req.Inputs.Postgres.TlsDisabled, req.State.Postgres.TlsDisabled
@@ -159,7 +159,7 @@ func storePostgresUpdate(ctx context.Context, req infer.UpdateRequest[StoreArgs,
 	if len(changes) > 0 {
 		parts := []string{}
 		for k, v := range changes {
-			parts = append(parts, fmt.Sprintf("'%s' = %s", k, escapeSQL(v)))
+			parts = append(parts, fmt.Sprintf("'%s' = %s", k, v))
 		}
 		stmt := fmt.Sprintf("UPDATE STORE %s WITH (%s);", quoteIdent(req.ID), joinComma(parts))
 		if _, err := conn.ExecContext(ctx, stmt); err != nil {
@@ -221,10 +221,6 @@ func joinComma(parts []string) string {
 	return out
 }
 
-// escapeSQL performs the most basic single-quote escaping used for embedding values
-// inside single-quoted SQL literal contexts.
-func escapeSQL(s string) string { return strings.ReplaceAll(s, "'", "''") }
-
 func normalizePostgresUris(ctx context.Context, in string) (string, error) {
 	logger := p.GetLogger(ctx)
 	if strings.TrimSpace(in) == "" {
@@ -271,6 +267,7 @@ func normalizePostgresUris(ctx context.Context, in string) (string, error) {
 
 	// Set the path to just the database name
 	u.Path = "/" + dbName
+	u.RawQuery = ""
 
 	return u.String(), nil
 }
