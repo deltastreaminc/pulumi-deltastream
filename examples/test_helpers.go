@@ -11,6 +11,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type Creds struct {
+	SaslKafkaUris string `yaml:"saslKafkaUris"`
+	SaslUser      string `yaml:"saslUser"`
+	SaslPass      string `yaml:"saslPass"`
+	IamKafkaUris  string `yaml:"iamKafkaUris"`
+	MskRole       string `yaml:"mskRole"`
+	MskRegion     string `yaml:"mskRegion"`
+}
+
 func getJSBaseOptions(t *testing.T) integration.ProgramTestOptions {
 	t.Helper()
 	base := getBaseOptions(t)
