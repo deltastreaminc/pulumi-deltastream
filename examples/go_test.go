@@ -14,21 +14,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Creds struct {
-	SaslKafkaUris string `yaml:"saslKafkaUris"`
-	SaslUser      string `yaml:"saslUser"`
-	SaslPass      string `yaml:"saslPass"`
-	IamKafkaUris  string `yaml:"iamKafkaUris"`
-	MskRole       string `yaml:"mskRole"`
-	MskRegion     string `yaml:"mskRegion"`
-}
-
 func TestBasicGo(t *testing.T) {
 	apiKey, server := getCredentials(t)
 
 	opts := getGoBaseOptions(t).With(integration.ProgramTestOptions{
-		Dir:              filepath.Join(getCwd(t), "database-namespace-go"),
-		DestroyOnCleanup: true,
+		Dir:                      filepath.Join(getCwd(t), "database-namespace-go"),
+		DestroyOnCleanup:         true,
 		AllowEmptyPreviewChanges: true,
 		AllowEmptyUpdateChanges:  true,
 		Env: []string{
@@ -66,8 +57,8 @@ func TestKafkaStoreUpdateGo(t *testing.T) {
 	step1Dir := filepath.Join(getCwd(t), "kafka-store-go", "step1")
 	step2Dir := filepath.Join(getCwd(t), "kafka-store-go", "step2")
 	opts := base.With(integration.ProgramTestOptions{
-		Dir:              step1Dir,
-		DestroyOnCleanup: true,
+		Dir:                      step1Dir,
+		DestroyOnCleanup:         true,
 		AllowEmptyPreviewChanges: true,
 		AllowEmptyUpdateChanges:  true,
 		Env: []string{
@@ -125,8 +116,8 @@ func TestSnowflakeStoreUpdateGo(t *testing.T) {
 	step2Dir := filepath.Join(getCwd(t), "snowflake-store-go", "step2")
 	warehouse2 := creds.SnowflakeWarehouseName + "_ALT"
 	opts := getGoBaseOptions(t).With(integration.ProgramTestOptions{
-		Dir:              step1Dir,
-		DestroyOnCleanup: true,
+		Dir:                      step1Dir,
+		DestroyOnCleanup:         true,
 		AllowEmptyPreviewChanges: true,
 		AllowEmptyUpdateChanges:  true,
 		Env: []string{
@@ -214,8 +205,8 @@ func TestPostgresStoreUpdateGo(t *testing.T) {
 	step1Dir := filepath.Join(getCwd(t), "postgres-store-go", "step1")
 	step2Dir := filepath.Join(getCwd(t), "postgres-store-go", "step2")
 	opts := getGoBaseOptions(t).With(integration.ProgramTestOptions{
-		Dir:              step1Dir,
-		DestroyOnCleanup: true,
+		Dir:                      step1Dir,
+		DestroyOnCleanup:         true,
 		AllowEmptyPreviewChanges: true,
 		AllowEmptyUpdateChanges:  true,
 		Env: []string{
@@ -294,9 +285,9 @@ func TestQueryGo(t *testing.T) {
 		t.Skip("Skipping Query test: missing Kafka IAM env vars")
 	}
 	opts := getGoBaseOptions(t).With(integration.ProgramTestOptions{
-		Dir:              filepath.Join(getCwd(t), "query-go"),
-		DestroyOnCleanup: true,
-		SkipPreview:      true,
+		Dir:                      filepath.Join(getCwd(t), "query-go"),
+		DestroyOnCleanup:         true,
+		SkipPreview:              true,
 		AllowEmptyPreviewChanges: true,
 		AllowEmptyUpdateChanges:  true,
 		Env: []string{

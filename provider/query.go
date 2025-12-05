@@ -159,7 +159,7 @@ func (Query) Diff(ctx context.Context, req infer.DiffRequest[QueryArgs, QuerySta
 	if (req.State.Owner == nil && req.Inputs.Owner != nil) || (req.State.Owner != nil && req.Inputs.Owner != nil && *req.State.Owner != *req.Inputs.Owner) {
 		diff["owner"] = p.PropertyDiff{Kind: p.Update}
 	}
-	return infer.DiffResponse{HasChanges: len(diff) > 0, DetailedDiff: diff}, nil
+	return infer.DiffResponse{HasChanges: len(diff) > 0, DetailedDiff: diff, DeleteBeforeReplace: true}, nil
 }
 
 // stringSlicesEqual returns true if slices have identical length and element order.
