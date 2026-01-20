@@ -5,9 +5,6 @@
   "homepage": "https://www.deltastream.io",
   "pluginDownloadURL": "github://api.github.com/deltastreaminc",
   "namespace": "deltastream",
-  "meta": {
-    "moduleFormat": "(.*)"
-  },
   "language": {
     "csharp": {
       "respectSchemaVersion": true
@@ -68,9 +65,9 @@
       },
       "type": "object",
       "required": [
-        "createdAt",
         "name",
-        "owner"
+        "owner",
+        "createdAt"
       ]
     },
     "deltastream:index:GetNamespaceResult": {
@@ -90,10 +87,10 @@
       },
       "type": "object",
       "required": [
-        "createdAt",
         "database",
         "name",
-        "owner"
+        "owner",
+        "createdAt"
       ]
     },
     "deltastream:index:GetObjectResult": {
@@ -128,14 +125,14 @@
       },
       "type": "object",
       "required": [
-        "createdAt",
         "database",
-        "fqn",
-        "name",
         "namespace",
-        "owner",
-        "state",
+        "name",
+        "fqn",
         "type",
+        "state",
+        "owner",
+        "createdAt",
         "updatedAt"
       ]
     },
@@ -162,11 +159,11 @@
       },
       "type": "object",
       "required": [
-        "createdAt",
         "name",
-        "owner",
-        "state",
         "type",
+        "state",
+        "owner",
+        "createdAt",
         "updatedAt"
       ]
     },
@@ -207,8 +204,8 @@
       },
       "type": "object",
       "required": [
-        "saslHashFunction",
-        "uris"
+        "uris",
+        "saslHashFunction"
       ]
     },
     "deltastream:index:PostgresInputs": {
@@ -232,9 +229,9 @@
       },
       "type": "object",
       "required": [
-        "password",
         "uris",
-        "username"
+        "username",
+        "password"
       ]
     },
     "deltastream:index:SnowflakeInputs": {
@@ -264,13 +261,13 @@
       },
       "type": "object",
       "required": [
-        "accountId",
-        "clientKey",
-        "cloudRegion",
-        "roleName",
         "uris",
+        "accountId",
+        "roleName",
         "username",
-        "warehouseName"
+        "warehouseName",
+        "cloudRegion",
+        "clientKey"
       ]
     }
   },
@@ -278,6 +275,9 @@
     "properties": {
       "apiKey": {
         "type": "string"
+      },
+      "insecureSkipVerify": {
+        "type": "boolean"
       },
       "organization": {
         "type": "string"
@@ -292,7 +292,6 @@
         "type": "string"
       }
     },
-    "type": "object",
     "required": [
       "server"
     ],
@@ -321,6 +320,84 @@
     ]
   },
   "resources": {
+    "deltastream:index:Application": {
+      "description": "Application resource for multi-sink streaming applications with virtual intermediate relations.",
+      "properties": {
+        "applicationId": {
+          "type": "string",
+          "description": "System-generated application identifier"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "queryName": {
+          "type": "string"
+        },
+        "queryVersion": {
+          "type": "integer"
+        },
+        "sinkRelationFqns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sourceRelationFqns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sql": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string",
+          "description": "Lifecycle state of the application (starting|running|terminate_requested|terminated|errored)"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "sourceRelationFqns",
+        "sinkRelationFqns",
+        "sql",
+        "applicationId",
+        "state",
+        "createdAt",
+        "updatedAt",
+        "owner"
+      ],
+      "inputProperties": {
+        "owner": {
+          "type": "string"
+        },
+        "sinkRelationFqns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sourceRelationFqns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sql": {
+          "type": "string"
+        }
+      },
+      "requiredInputs": [
+        "sourceRelationFqns",
+        "sinkRelationFqns",
+        "sql"
+      ]
+    },
     "deltastream:index:Database": {
       "description": "A DeltaStream database resource that provides namespacing for streams, changelogs, and other objects",
       "properties": {
@@ -337,10 +414,9 @@
           "description": "The owner of the database"
         }
       },
-      "type": "object",
       "required": [
-        "createdAt",
-        "name"
+        "name",
+        "createdAt"
       ],
       "inputProperties": {
         "name": {
@@ -403,19 +479,18 @@
           "type": "string"
         }
       },
-      "type": "object",
       "required": [
-        "createdAt",
         "database",
-        "fqn",
-        "name",
         "namespace",
-        "owner",
-        "path",
-        "sql",
-        "state",
         "store",
+        "sql",
+        "name",
+        "path",
+        "fqn",
         "type",
+        "state",
+        "owner",
+        "createdAt",
         "updatedAt"
       ],
       "inputProperties": {
@@ -438,8 +513,8 @@
       "requiredInputs": [
         "database",
         "namespace",
-        "sql",
-        "store"
+        "store",
+        "sql"
       ]
     },
     "deltastream:index:Namespace": {
@@ -462,11 +537,10 @@
           "description": "Optional owning role. When set, statements execute as this role during create."
         }
       },
-      "type": "object",
       "required": [
-        "createdAt",
         "database",
-        "name"
+        "name",
+        "createdAt"
       ],
       "inputProperties": {
         "database": {
@@ -526,16 +600,15 @@
           "type": "string"
         }
       },
-      "type": "object",
       "required": [
-        "createdAt",
-        "owner",
-        "queryId",
-        "sinkRelationFqn",
         "sourceRelationFqns",
+        "sinkRelationFqn",
         "sql",
+        "queryId",
         "state",
-        "updatedAt"
+        "createdAt",
+        "updatedAt",
+        "owner"
       ],
       "inputProperties": {
         "owner": {
@@ -555,8 +628,8 @@
         }
       },
       "requiredInputs": [
-        "sinkRelationFqn",
         "sourceRelationFqns",
+        "sinkRelationFqn",
         "sql"
       ]
     },
@@ -593,14 +666,13 @@
           "type": "string"
         }
       },
-      "type": "object",
       "required": [
-        "createdAt",
         "name",
-        "owner",
-        "state",
         "type",
-        "updatedAt"
+        "state",
+        "createdAt",
+        "updatedAt",
+        "owner"
       ],
       "inputProperties": {
         "kafka": {
@@ -650,9 +722,9 @@
           }
         },
         "required": [
-          "createdAt",
           "name",
-          "owner"
+          "owner",
+          "createdAt"
         ],
         "type": "object"
       }
@@ -708,10 +780,10 @@
           }
         },
         "required": [
-          "createdAt",
           "database",
           "name",
-          "owner"
+          "owner",
+          "createdAt"
         ],
         "type": "object"
       }
@@ -759,8 +831,8 @@
         "type": "object",
         "required": [
           "database",
-          "name",
-          "namespace"
+          "namespace",
+          "name"
         ]
       },
       "outputs": {
@@ -794,14 +866,14 @@
           }
         },
         "required": [
-          "createdAt",
           "database",
-          "fqn",
-          "name",
           "namespace",
-          "owner",
-          "state",
+          "name",
+          "fqn",
           "type",
+          "state",
+          "owner",
+          "createdAt",
           "updatedAt"
         ],
         "type": "object"
@@ -872,11 +944,11 @@
           }
         },
         "required": [
-          "createdAt",
           "name",
-          "owner",
-          "state",
           "type",
+          "state",
+          "owner",
+          "createdAt",
           "updatedAt"
         ],
         "type": "object"

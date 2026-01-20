@@ -43,6 +43,7 @@ func Provider() p.Provider {
 		infer.Resource(Store{}),
 		infer.Resource(DeltaStreamObject{}),
 		infer.Resource(Query{}),
+		infer.Resource(Application{}),
 	)
 	b = b.WithFunctions(
 		infer.Function(GetDatabase{}),

@@ -38,7 +38,7 @@ func TestBasicTs(t *testing.T) {
 func TestQueryTs(t *testing.T) {
 	apiKey, server := getCredentials(t)
 
-	var creds Creds
+	var creds KafkaCreds
 	data, err := os.ReadFile("credentials.yaml")
 	require.NoError(t, err)
 	err = yaml.Unmarshal(data, &creds)

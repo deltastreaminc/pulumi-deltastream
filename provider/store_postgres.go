@@ -267,7 +267,6 @@ func normalizePostgresUris(ctx context.Context, in string) (string, error) {
 
 	// Set the path to just the database name
 	u.Path = "/" + dbName
-	u.RawQuery = ""
 
 	return u.String(), nil
 }

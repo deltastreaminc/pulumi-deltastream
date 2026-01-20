@@ -1,9 +1,9 @@
-module example-query
+module application_test
 
-go 1.25.5
+go 1.25.6
 
 require (
-	github.com/deltastreaminc/pulumi-deltastream/sdk/go/pulumi-deltastream v1.0.0-alpha.0
+	github.com/deltastreaminc/pulumi-deltastream/sdk/go/pulumi-deltastream v0.0.0
 	github.com/pulumi/pulumi/sdk/v3 v3.216.0
 )
 

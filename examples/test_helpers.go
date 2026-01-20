@@ -11,13 +11,31 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Creds struct {
+type KafkaCreds struct {
 	SaslKafkaUris string `yaml:"saslKafkaUris"`
 	SaslUser      string `yaml:"saslUser"`
 	SaslPass      string `yaml:"saslPass"`
 	IamKafkaUris  string `yaml:"iamKafkaUris"`
 	MskRole       string `yaml:"mskRole"`
 	MskRegion     string `yaml:"mskRegion"`
+}
+
+type SnowflakeCreds struct {
+	SnowflakeUris          string `yaml:"snowflakeUris"`
+	SnowflakeAccountId     string `yaml:"snowflakeAccountId"`
+	SnowflakeRoleName      string `yaml:"snowflakeRoleName"`
+	SnowflakeUsername      string `yaml:"snowflakeUsername"`
+	SnowflakeWarehouseName string `yaml:"snowflakeWarehouseName"`
+	SnowflakeCloudRegion   string `yaml:"snowflakeCloudRegion"`
+	SnowflakeClientKey     string `yaml:"snowflakeClientKey"`
+}
+
+type PostgeresCreds struct {
+	PostgresUris        string `yaml:"postgresUris"`
+	PostgresUsername    string `yaml:"postgresUsername"`
+	PostgresPassword    string `yaml:"postgresPassword"`
+	PostgresDatabase    string `yaml:"postgresDatabase"`
+	PostgresCdcSlotName string `yaml:"postgresCdcSlotName"`
 }
 
 func getJSBaseOptions(t *testing.T) integration.ProgramTestOptions {
