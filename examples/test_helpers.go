@@ -30,7 +30,7 @@ type SnowflakeCreds struct {
 	SnowflakeClientKey     string `yaml:"snowflakeClientKey"`
 }
 
-type PostgeresCreds struct {
+type PostgresCreds struct {
 	PostgresUris        string `yaml:"postgresUris"`
 	PostgresUsername    string `yaml:"postgresUsername"`
 	PostgresPassword    string `yaml:"postgresPassword"`

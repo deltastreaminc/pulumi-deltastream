@@ -187,7 +187,7 @@ func TestPostgresStoreUpdateGo(t *testing.T) {
 	data, err := os.ReadFile("credentials.yaml")
 	require.NoError(t, err)
 
-	var creds PostgeresCreds
+	var creds PostgresCreds
 	err = yaml.Unmarshal(data, &creds)
 	require.NoError(t, err)
 	if creds.PostgresUris == "" || creds.PostgresUsername == "" || creds.PostgresPassword == "" {
@@ -316,7 +316,7 @@ func TestApplicationGo(t *testing.T) {
 	var creds struct {
 		KafkaCreds     `yaml:",inline"`
 		SnowflakeCreds `yaml:",inline"`
-		PostgeresCreds `yaml:",inline"`
+		PostgresCreds  `yaml:",inline"`
 	}
 	data, err := os.ReadFile("credentials.yaml")
 	require.NoError(t, err)

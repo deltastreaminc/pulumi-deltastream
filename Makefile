@@ -139,7 +139,7 @@ install_python_sdk:
 .PHONY: test
 test: export PATH := $(WORKING_DIR)/bin:$(PATH)
 test: install_go_sdk install_nodejs_sdk
-	cd examples && go test -v -tags=all -parallel $(TESTPARALLELISM) -timeout 2h $(value GOTESTARGS) #-run ApplicationGo
+	cd examples && go test -v -tags=all -parallel $(TESTPARALLELISM) -timeout 2h $(value GOTESTARGS)
 
 .PHONY: help
 help:
