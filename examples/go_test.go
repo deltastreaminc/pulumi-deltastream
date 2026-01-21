@@ -46,7 +46,7 @@ func TestKafkaStoreUpdateGo(t *testing.T) {
 	data, err := os.ReadFile("credentials.yaml")
 	require.NoError(t, err)
 
-	var creds Creds
+	var creds KafkaCreds
 	err = yaml.Unmarshal(data, &creds)
 	require.NoError(t, err)
 
@@ -98,20 +98,14 @@ func TestSnowflakeStoreUpdateGo(t *testing.T) {
 	apiKey, server := getCredentials(t)
 	data, err := os.ReadFile("credentials.yaml")
 	require.NoError(t, err)
-	var creds struct {
-		SnowflakeUris          string `yaml:"snowflakeUris"`
-		SnowflakeAccountId     string `yaml:"snowflakeAccountId"`
-		SnowflakeRoleName      string `yaml:"snowflakeRoleName"`
-		SnowflakeUsername      string `yaml:"snowflakeUsername"`
-		SnowflakeWarehouseName string `yaml:"snowflakeWarehouseName"`
-		SnowflakeCloudRegion   string `yaml:"snowflakeCloudRegion"`
-		SnowflakeClientKey     string `yaml:"snowflakeClientKey"`
-	}
+
+	var creds SnowflakeCreds
 	err = yaml.Unmarshal(data, &creds)
 	require.NoError(t, err)
 	if creds.SnowflakeUris == "" || creds.SnowflakeAccountId == "" || creds.SnowflakeRoleName == "" || creds.SnowflakeUsername == "" || creds.SnowflakeWarehouseName == "" || creds.SnowflakeCloudRegion == "" || creds.SnowflakeClientKey == "" {
 		t.Skip("Skipping Snowflake store update test: missing required snowflake credentials")
 	}
+
 	step1Dir := filepath.Join(getCwd(t), "snowflake-store-go", "step1")
 	step2Dir := filepath.Join(getCwd(t), "snowflake-store-go", "step2")
 	warehouse2 := creds.SnowflakeWarehouseName + "_ALT"
@@ -192,16 +186,14 @@ func TestPostgresStoreUpdateGo(t *testing.T) {
 	apiKey, server := getCredentials(t)
 	data, err := os.ReadFile("credentials.yaml")
 	require.NoError(t, err)
-	var creds struct {
-		PostgresUris     string `yaml:"postgresUris"`
-		PostgresUsername string `yaml:"postgresUsername"`
-		PostgresPassword string `yaml:"postgresPassword"`
-	}
+
+	var creds PostgresCreds
 	err = yaml.Unmarshal(data, &creds)
 	require.NoError(t, err)
 	if creds.PostgresUris == "" || creds.PostgresUsername == "" || creds.PostgresPassword == "" {
 		t.Skip("Skipping Postgres store update test: missing required postgres credentials")
 	}
+
 	step1Dir := filepath.Join(getCwd(t), "postgres-store-go", "step1")
 	step2Dir := filepath.Join(getCwd(t), "postgres-store-go", "step2")
 	opts := getGoBaseOptions(t).With(integration.ProgramTestOptions{
@@ -275,7 +267,7 @@ func TestObjectGo(t *testing.T) {
 func TestQueryGo(t *testing.T) {
 	apiKey, server := getCredentials(t)
 
-	var creds Creds
+	var creds KafkaCreds
 	data, err := os.ReadFile("credentials.yaml")
 	require.NoError(t, err)
 	err = yaml.Unmarshal(data, &creds)
@@ -312,6 +304,81 @@ func TestQueryGo(t *testing.T) {
 			}
 			if qstate, ok := stackInfo.Outputs["query_state"]; ok {
 				require.NotEmpty(t, qstate)
+			}
+		},
+	})
+	integration.ProgramTest(t, &opts)
+}
+
+func TestApplicationGo(t *testing.T) {
+	apiKey, server := getCredentials(t)
+
+	var creds struct {
+		KafkaCreds     `yaml:",inline"`
+		SnowflakeCreds `yaml:",inline"`
+		PostgresCreds  `yaml:",inline"`
+	}
+	data, err := os.ReadFile("credentials.yaml")
+	require.NoError(t, err)
+	err = yaml.Unmarshal(data, &creds)
+	require.NoError(t, err)
+
+	if creds.IamKafkaUris == "" || creds.MskRole == "" || creds.MskRegion == "" {
+		t.Skip("Skipping Application test: missing Kafka IAM env vars")
+	}
+	opts := getGoBaseOptions(t).With(integration.ProgramTestOptions{
+		Dir:                      filepath.Join(getCwd(t), "application-go"),
+		DestroyOnCleanup:         true,
+		SkipPreview:              true,
+		AllowEmptyPreviewChanges: true,
+		AllowEmptyUpdateChanges:  true,
+		Env: []string{
+			"DELTASTREAM_API_KEY=" + apiKey,
+			"DELTASTREAM_SERVER=" + server,
+			"KAFKA_MSK_IAM_URIS=" + creds.IamKafkaUris,
+			"KAFKA_MSK_IAM_ROLE_ARN=" + creds.MskRole,
+			"KAFKA_MSK_AWS_REGION=" + creds.MskRegion,
+
+			"SNOWFLAKE_URIS=" + creds.SnowflakeUris,
+			"SNOWFLAKE_ACCOUNT_ID=" + creds.SnowflakeAccountId,
+			"SNOWFLAKE_ROLE_NAME=" + creds.SnowflakeRoleName,
+			"SNOWFLAKE_USERNAME=" + creds.SnowflakeUsername,
+			"SNOWFLAKE_WAREHOUSE_NAME=" + creds.SnowflakeWarehouseName,
+			"SNOWFLAKE_CLOUD_REGION=" + creds.SnowflakeCloudRegion,
+			"SNOWFLAKE_CLIENT_KEY=" + creds.SnowflakeClientKey,
+
+			"POSTGRES_URIS=" + creds.PostgresUris,
+			"POSTGRES_USERNAME=" + creds.PostgresUsername,
+			"POSTGRES_PASSWORD=" + creds.PostgresPassword,
+			"POSTGRES_DATABASE=" + creds.PostgresDatabase,
+			"POSTGRES_CDC_SLOT=" + creds.PostgresCdcSlotName,
+		},
+		ExtraRuntimeValidation: func(t *testing.T, stackInfo integration.RuntimeValidationStackInfo) {
+			// Validate APPLICATION outputs
+			if appFqn, ok := stackInfo.Outputs["app_fqn"]; ok {
+				require.NotEmpty(t, appFqn)
+			}
+			if appType, ok := stackInfo.Outputs["app_type"]; ok {
+				require.NotEmpty(t, appType)
+				// APPLICATION type should be "application"
+				require.Equal(t, "application", strings.ToLower(appType.(string)))
+			}
+			if appState, ok := stackInfo.Outputs["app_state"]; ok {
+				require.NotEmpty(t, appState)
+			}
+			// Validate physical source relations (created OUTSIDE APPLICATION)
+			if pageviewsFqn, ok := stackInfo.Outputs["pageviews_fqn"]; ok {
+				require.NotEmpty(t, pageviewsFqn)
+			}
+			if pgTableFqn, ok := stackInfo.Outputs["pg_table_fqn"]; ok {
+				require.NotEmpty(t, pgTableFqn)
+			}
+			// Validate physical sink relations (created OUTSIDE APPLICATION)
+			if pgCdcFqn, ok := stackInfo.Outputs["pg_cdc_fqn"]; ok {
+				require.NotEmpty(t, pgCdcFqn)
+			}
+			if sfTableFqn, ok := stackInfo.Outputs["sf_table_fqn"]; ok {
+				require.NotEmpty(t, sfTableFqn)
 			}
 		},
 	})

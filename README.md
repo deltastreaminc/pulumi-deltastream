@@ -5,7 +5,14 @@ A Pulumi provider for managing DeltaStream resources.
 ## Overview
 
 The DeltaStream provider for Pulumi allows you to manage DeltaStream resources using infrastructure as code. DeltaStream is a streaming data platform that enables real-time analytics and processing.
-This provider supports Databases, Namespaces, Stores, Objects (STREAM/CHANGELOG/TABLE) and now Continuous Queries (INSERT INTO ... SELECT ...).
+
+This provider supports:
+- **Databases** - Logical containers for schemas and relations
+- **Namespaces** - Schema namespaces within databases
+- **Stores** - External data stores (Kafka, Kinesis, etc.)
+- **Objects** - Relations (STREAM/CHANGELOG/TABLE)
+- **Query** - Continuous INSERT INTO queries (single sink)
+- **Application** - Multi-sink streaming applications with virtual relations
 
 ## Installation
 
@@ -106,19 +113,176 @@ func main() {
 }
 ```
 
-### Streaming Query (Go)
+### Streaming Queries
 
-```go
-q, err := ds.NewQuery(ctx, "insertExample", &ds.QueryArgs{
-    SourceRelationFqns: pulumi.StringArray{ source.Fqn },
-    SinkRelationFqn:    sink.Fqn,
-    Sql: pulumi.Sprintf("INSERT INTO %s SELECT * FROM %s;", sink.Fqn, source.Fqn),
-}, pulumi.Provider(prov))
-if err != nil { return err }
-_ = q
+DeltaStream supports two types of streaming query resources:
+
+#### 1. Query Resource (INSERT INTO)
+
+The `Query` resource is for simple INSERT INTO queries with a single sink:
+
+**TypeScript:**
+```typescript
+const query = new deltastream.Query("myQuery", {
+    sourceRelationFqns: [source.fqn],
+    sinkRelationFqn: sink.fqn,  // Single sink
+    sql: pulumi.interpolate`INSERT INTO ${sink.fqn} SELECT * FROM ${source.fqn};`,
+}, { provider });
 ```
 
+**Go:**
+```go
+q, err := ds.NewQuery(ctx, "myQuery", &ds.QueryArgs{
+    SourceRelationFqns: pulumi.StringArray{ source.Fqn },
+    SinkRelationFqn:    sink.Fqn,  // Single sink
+    Sql: pulumi.Sprintf("INSERT INTO %s SELECT * FROM %s;", sink.Fqn, source.Fqn),
+}, pulumi.Provider(prov))
+```
+
+#### 2. Application Resource (Multi-Sink)
+
+The `Application` resource is for complex streaming applications with:
+- **Multiple INSERT INTO statements** targeting different sinks
+- **Virtual intermediate relations** (CREATE VIRTUAL STREAM/CHANGELOG)
+- **Complex processing logic** with joins, windows, and aggregations
+
+**Key Features:**
+- Virtual relations are internal to the APPLICATION and don't create Kafka topics
+- Only physical sources and sinks need to be declared as dependencies
+- Virtual relations are automatically excluded from dependency tracking
+
+**TypeScript:**
+```typescript
+// 1. Create physical source and sink relations OUTSIDE the application
+const pageviews = new deltastream.DeltaStreamObject("pageviews", {
+    database: db.name,
+    namespace: "public",
+    store: kafkaStore.name,
+    sql: pulumi.interpolate`CREATE STREAM pageviews (...) WITH ('topic'='pageviews');`,
+}, { provider });
+
+const visitFreq = new deltastream.DeltaStreamObject("visitFreq", {
+    database: db.name,
+    namespace: "public",
+    store: kafkaStore.name,
+    sql: pulumi.interpolate`CREATE CHANGELOG visit_freq (...) WITH ('topic'='visit_freq');`,
+}, { provider });
+
+// 2. Create APPLICATION with virtual relations and INSERT INTO
+const app = new deltastream.Application("myApp", {
+    sourceRelationFqns: [pageviews.fqn],      // Physical sources only
+    sinkRelationFqns: [visitFreq.fqn],        // Physical sinks only
+    sql: pulumi.interpolate`
+        BEGIN APPLICATION my_app
+            -- Virtual relation (no Kafka topic, internal only)
+            CREATE VIRTUAL STREAM virtual.public.filtered AS
+                SELECT * FROM ${pageviews.fqn}
+                WHERE userid IS NOT NULL;
+            
+            -- Insert into physical sink
+            INSERT INTO ${visitFreq.fqn}
+                SELECT window_start, window_end, userid, count(*) as cnt
+                FROM TUMBLE(virtual.public.filtered, SIZE 30 SECONDS)
+                GROUP BY window_start, window_end, userid;
+        END APPLICATION;
+    `,
+}, { provider, dependsOn: [pageviews, visitFreq] });
+```
+
+**Go:**
+```go
+// 1. Create physical source and sink relations OUTSIDE the application
+pageviews, err := ds.NewDeltaStreamObject(ctx, "pageviews", &ds.DeltaStreamObjectArgs{
+    Database:  db.Name,
+    Namespace: pulumi.String("public"),
+    Store:     kafkaStore.Name,
+    Sql: pulumi.Sprintf("CREATE STREAM pageviews (...) WITH ('topic'='pageviews');"),
+}, pulumi.Provider(prov))
+
+visitFreq, err := ds.NewDeltaStreamObject(ctx, "visitFreq", &ds.DeltaStreamObjectArgs{
+    Database:  db.Name,
+    Namespace: pulumi.String("public"),
+    Store:     kafkaStore.Name,
+    Sql: pulumi.Sprintf("CREATE CHANGELOG visit_freq (...) WITH ('topic'='visit_freq');"),
+}, pulumi.Provider(prov))
+
+// 2. Create APPLICATION with virtual relations and INSERT INTO
+app, err := ds.NewApplication(ctx, "myApp", &ds.ApplicationArgs{
+    SourceRelationFqns: pulumi.StringArray{ pageviews.Fqn },  // Physical sources only
+    SinkRelationFqns:   pulumi.StringArray{ visitFreq.Fqn },  // Physical sinks only
+    Sql: pulumi.Sprintf(`
+        BEGIN APPLICATION my_app
+            -- Virtual relation (no Kafka topic, internal only)
+            CREATE VIRTUAL STREAM virtual.public.filtered AS
+                SELECT * FROM %s
+                WHERE userid IS NOT NULL;
+            
+            -- Insert into physical sink
+            INSERT INTO %s
+                SELECT window_start, window_end, userid, count(*) as cnt
+                FROM TUMBLE(virtual.public.filtered, SIZE 30 SECONDS)
+                GROUP BY window_start, window_end, userid;
+        END APPLICATION;
+    `, pageviews.Fqn, visitFreq.Fqn),
+}, pulumi.Provider(prov))
+```
+
+**Important Notes:**
+- Virtual relations (CREATE VIRTUAL) must NOT be included in `sourceRelationFqns` or `sinkRelationFqns`
+- Only physical relations (with actual Kafka topics) should be declared as dependencies
+- The provider validates that virtual relations are not incorrectly declared as dependencies
+
+For complete examples, see:
+- [examples/application-go](examples/application-go/) - Full Go example with multiple sinks
+- [examples/application-ts](examples/application-ts/) - Full TypeScript example with multiple sinks
+
 ## Development
+
+### Resources
+
+The provider includes the following resources:
+
+| Resource | Description | Use Case |
+|----------|-------------|----------|
+| `Database` | Logical database container | Group related schemas and relations |
+| `Namespace` | Schema namespace within a database | Organize relations |
+| `Store` | External data store connection (Kafka, Kinesis, etc.) | Connect to data sources |
+| `DeltaStreamObject` | Physical relation (STREAM/CHANGELOG/TABLE) | Create physical data structures with Kafka topics |
+| `Query` | Continuous INSERT INTO query | Simple single-sink streaming transformations |
+| `Application` | Multi-sink streaming application | Complex applications with multiple sinks and virtual relations |
+
+### Query vs Application: When to Use Each
+
+**Use `Query` when:**
+- You have a simple INSERT INTO ... SELECT query
+- Single source and single sink
+- No virtual intermediate relations needed
+- Straightforward transformations
+
+**Use `Application` when:**
+- Multiple INSERT INTO statements targeting different sinks
+- Need virtual intermediate relations (CREATE VIRTUAL STREAM/CHANGELOG)
+- Complex processing with joins, windows, and aggregations
+- Want to organize related queries into a single logical unit
+
+### Query Resource Field Notes
+
+The Query resource supports both legacy and current field names for backward compatibility:
+
+- **`sinkRelationFqn`** (string, **deprecated**): For backward compatibility with single-sink INSERT INTO queries
+- **`sinkRelationFqns`** (string[], **deprecated**): For legacy APPLICATION queries
+
+**Recommendation:** For new code:
+- Use `Query` resource for simple INSERT INTO queries
+- Use `Application` resource for multi-sink streaming applications
+
+**Why the change?** The new `Application` resource provides:
+- Type-safe APPLICATION-specific validation
+- Clear separation between Query and Application concerns  
+- Better developer experience with dedicated fields
+- Automatic validation of virtual relation dependencies
+
+**Migration:** Existing Query resources continue to work. See [CHANGELOG.md](CHANGELOG.md) for migration guide.
 
 ### Prerequisites
 
@@ -179,6 +343,10 @@ Targets intentionally avoid implicitly downloading tools; ensure the Pulumi CLI 
 │   ├── go/
 │   └── nodejs/
 ├── examples/                          # Example programs
+│   ├── application-go/               # Go APPLICATION example (multi-sink)
+│   ├── application-ts/               # TypeScript APPLICATION example (multi-sink)
+│   ├── query-go/                     # Go Query example (single sink)
+│   └── query-ts/                     # TypeScript Query example (single sink)
 ├── schema.json                        # Provider schema
 ├── Makefile                          # Build automation
 └── README.md                         # This file
