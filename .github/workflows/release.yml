@@ -214,7 +214,7 @@ jobs:
         run: |
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
       - name: Publish Node SDK (package publisher)
-        uses: pulumi/pulumi-package-publisher@v0.0.22
+        uses: pulumi/pulumi-package-publisher@v0.0.23
         with:
           sdk: nodejs
           version: ${{ needs.setup.outputs.version_no_v }}
