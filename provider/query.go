@@ -394,12 +394,30 @@ func describeQuery(ctx context.Context, conn *sql.Conn, sqlText string) (string,
 
 // executeQuerySQL runs the query creation DDL and returns the generated artifact descriptor.
 func executeQuerySQL(ctx context.Context, conn *sql.Conn, sqlText string) (queryArtifactDDL, error) {
-	row := conn.QueryRowContext(ctx, sqlText)
-	var art queryArtifactDDL
-	if err := row.Scan(&art.Type, &art.Name, &art.Command, &art.Summary, &art.Path); err != nil {
-		return art, err
+	result, err := conn.QueryContext(ctx, sqlText)
+	if err != nil {
+		return queryArtifactDDL{}, err
 	}
-	return art, nil
+	defer result.Close()
+	for result.Next() {
+		if rerr := result.Err(); rerr != nil {
+			return queryArtifactDDL{}, rerr
+		}
+
+		var art queryArtifactDDL
+		if err := result.Scan(&art.Type, &art.Name, &art.Command, &art.Summary, &art.Path); err != nil {
+			return queryArtifactDDL{}, err
+		}
+
+		if rerr := result.Err(); rerr != nil {
+			return queryArtifactDDL{}, rerr
+		}
+
+		if art.Type == "query" {
+			return art, nil
+		}
+	}
+	return queryArtifactDDL{}, fmt.Errorf("no query artifact returned from execution")
 }
 
 // lookupQuery returns a hydrated query row for the given ID.
@@ -421,6 +439,7 @@ func ensureQueryLookup(ctx context.Context, conn *sql.Conn, id string) error {
 
 // waitForQueryRunning polls until the query reaches running or errored/timeout occurs.
 func waitForQueryRunning(ctx context.Context, conn *sql.Conn, id string, timeout time.Duration) error {
+	logger := p.GetLogger(ctx)
 	deadline := time.Now().Add(timeout)
 	for {
 		qr, err := lookupQuery(ctx, conn, id)
@@ -433,12 +452,15 @@ func waitForQueryRunning(ctx context.Context, conn *sql.Conn, id string, timeout
 				return fmt.Errorf("query row missing")
 			}
 			// transient; brief sleep
+			logger.Debugf("error while looking up query with id %s, %v", id, err)
 		} else {
 			switch qr.State {
 			case "running":
 				return nil
 			case "errored":
 				return fmt.Errorf("query errored while starting")
+			default:
+				logger.Debugf("waiting for query %s to reach running state; current state: %s", id, qr.State)
 			}
 		}
 		if time.Now().After(deadline) {
