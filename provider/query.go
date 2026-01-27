@@ -400,13 +400,19 @@ func executeQuerySQL(ctx context.Context, conn *sql.Conn, sqlText string) (query
 	}
 	defer result.Close()
 	for result.Next() {
+		if rerr := result.Err(); rerr != nil {
+			return queryArtifactDDL{}, rerr
+		}
+
 		var art queryArtifactDDL
 		if err := result.Scan(&art.Type, &art.Name, &art.Command, &art.Summary, &art.Path); err != nil {
-			return art, err
+			return queryArtifactDDL{}, err
 		}
-		if result.Err() != nil {
-			return art, result.Err()
+
+		if rerr := result.Err(); rerr != nil {
+			return queryArtifactDDL{}, rerr
 		}
+
 		if art.Type == "query" {
 			return art, nil
 		}
