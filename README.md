@@ -2,6 +2,7 @@
 
 A Pulumi provider for managing DeltaStream resources.
 
+
 ## Overview
 
 The DeltaStream provider for Pulumi allows you to manage DeltaStream resources using infrastructure as code. DeltaStream is a streaming data platform that enables real-time analytics and processing.
