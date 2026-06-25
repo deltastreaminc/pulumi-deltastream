@@ -101,6 +101,14 @@ func (Query) Check(ctx context.Context, req infer.CheckRequest) (infer.CheckResp
 	if args.SQL == "" || args.SinkRelationFqn == "" || len(args.SourceRelationFqns) == 0 {
 		return infer.CheckResponse[QueryArgs]{Inputs: args, Failures: failures}, nil
 	}
+
+	// Skip DESCRIBE when SQL is unchanged from the prior deploy. This prevents re-validating
+	// stale RESUME FROM QUERY ID references that may have been garbage-collected by the server
+	// while the query is still running correctly.
+	if oldVal, ok := req.OldInputs.GetOk("sql"); ok && oldVal.IsString() && oldVal.AsString() == args.SQL {
+		return infer.CheckResponse[QueryArgs]{Inputs: args, Failures: failures}, nil
+	}
+
 	cfg := infer.GetConfig[Config](ctx)
 	db, oerr := openDB(ctx, &cfg)
 	if oerr != nil { // tolerate missing connection in preview
