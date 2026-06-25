@@ -34,6 +34,7 @@ func TestApplicationCheck_SkipsDescribeWhenInputsUnchanged(t *testing.T) {
 END APPLICATION WITH (resume.from.query.id = '0fe1f533-0d9d-4250-8841-8ffc47af4d71');`
 
 	const src = `"db"."schema"."src"`
+	const src2 = `"db"."schema"."src2"`
 	const sink = `"db"."schema"."sink"`
 
 	buildInputs := func(sqlStr string, sources, sinks []string) property.Map {
@@ -52,36 +53,46 @@ END APPLICATION WITH (resume.from.query.id = '0fe1f533-0d9d-4250-8841-8ffc47af4d
 		})
 	}
 
-	newInputs := buildInputs(sql, []string{src}, []string{sink})
-
 	tests := []struct {
 		name      string
 		oldInputs property.Map
+		newInputs property.Map
 		wantSkip  bool
 	}{
 		{
 			name:      "all inputs unchanged skips DESCRIBE",
 			oldInputs: buildInputs(sql, []string{src}, []string{sink}),
+			newInputs: buildInputs(sql, []string{src}, []string{sink}),
+			wantSkip:  true,
+		},
+		{
+			name:      "sources in different order still skips (order-insensitive)",
+			oldInputs: buildInputs(sql, []string{src2, src}, []string{sink}),
+			newInputs: buildInputs(sql, []string{src, src2}, []string{sink}),
 			wantSkip:  true,
 		},
 		{
 			name:      "no OldInputs (first create) does not skip",
 			oldInputs: property.Map{},
+			newInputs: buildInputs(sql, []string{src}, []string{sink}),
 			wantSkip:  false,
 		},
 		{
 			name:      "changed SQL does not skip",
 			oldInputs: buildInputs(sql+" -- modified", []string{src}, []string{sink}),
+			newInputs: buildInputs(sql, []string{src}, []string{sink}),
 			wantSkip:  false,
 		},
 		{
 			name:      "SQL same but sinks changed does not skip",
 			oldInputs: buildInputs(sql, []string{src}, []string{`"db"."schema"."old_sink"`}),
+			newInputs: buildInputs(sql, []string{src}, []string{sink}),
 			wantSkip:  false,
 		},
 		{
 			name:      "SQL same but sources changed does not skip",
 			oldInputs: buildInputs(sql, []string{`"db"."schema"."old_src"`}, []string{sink}),
+			newInputs: buildInputs(sql, []string{src}, []string{sink}),
 			wantSkip:  false,
 		},
 	}
@@ -96,7 +107,7 @@ END APPLICATION WITH (resume.from.query.id = '0fe1f533-0d9d-4250-8841-8ffc47af4d
 				// reaching the DB (no credentials configured so any DB attempt would fail).
 				resp, err := Application{}.Check(context.Background(), infer.CheckRequest{
 					OldInputs: tt.oldInputs,
-					NewInputs: newInputs,
+					NewInputs: tt.newInputs,
 				})
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
@@ -116,7 +127,7 @@ END APPLICATION WITH (resume.from.query.id = '0fe1f533-0d9d-4250-8841-8ffc47af4d
 					}()
 					_, _ = Application{}.Check(context.Background(), infer.CheckRequest{
 						OldInputs: tt.oldInputs,
-						NewInputs: newInputs,
+						NewInputs: tt.newInputs,
 					})
 					return false
 				}()

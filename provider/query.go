@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -175,13 +176,20 @@ func (Query) Diff(ctx context.Context, req infer.DiffRequest[QueryArgs, QuerySta
 	return infer.DiffResponse{HasChanges: len(diff) > 0, DetailedDiff: diff, DeleteBeforeReplace: true}, nil
 }
 
-// stringSlicesEqual returns true if slices have identical length and element order.
+// stringSlicesEqual returns true if the two slices contain the same elements regardless of
+// order. Copies are sorted before comparison so the originals are not mutated.
 func stringSlicesEqual(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	for i := range a {
-		if a[i] != b[i] {
+	ac := make([]string, len(a))
+	bc := make([]string, len(b))
+	copy(ac, a)
+	copy(bc, b)
+	slices.Sort(ac)
+	slices.Sort(bc)
+	for i := range ac {
+		if ac[i] != bc[i] {
 			return false
 		}
 	}

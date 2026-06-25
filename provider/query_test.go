@@ -31,6 +31,7 @@ func TestQueryCheck_SkipsDescribeWhenInputsUnchanged(t *testing.T) {
 
 	const sql = `INSERT INTO "db"."schema"."sink" SELECT * FROM "db"."schema"."src";`
 	const src = `"db"."schema"."src"`
+	const src2 = `"db"."schema"."src2"`
 	const sink = `"db"."schema"."sink"`
 
 	buildInputs := func(sqlStr, sinkFqn string, sources []string) property.Map {
@@ -45,36 +46,46 @@ func TestQueryCheck_SkipsDescribeWhenInputsUnchanged(t *testing.T) {
 		})
 	}
 
-	newInputs := buildInputs(sql, sink, []string{src})
-
 	tests := []struct {
 		name      string
 		oldInputs property.Map
+		newInputs property.Map
 		wantSkip  bool
 	}{
 		{
 			name:      "all inputs unchanged skips DESCRIBE",
 			oldInputs: buildInputs(sql, sink, []string{src}),
+			newInputs: buildInputs(sql, sink, []string{src}),
+			wantSkip:  true,
+		},
+		{
+			name:      "sources in different order still skips (order-insensitive)",
+			oldInputs: buildInputs(sql, sink, []string{src2, src}),
+			newInputs: buildInputs(sql, sink, []string{src, src2}),
 			wantSkip:  true,
 		},
 		{
 			name:      "no OldInputs (first create) does not skip",
 			oldInputs: property.Map{},
+			newInputs: buildInputs(sql, sink, []string{src}),
 			wantSkip:  false,
 		},
 		{
 			name:      "changed SQL does not skip",
 			oldInputs: buildInputs(sql+" -- modified", sink, []string{src}),
+			newInputs: buildInputs(sql, sink, []string{src}),
 			wantSkip:  false,
 		},
 		{
 			name:      "SQL same but sink changed does not skip",
 			oldInputs: buildInputs(sql, `"db"."schema"."old_sink"`, []string{src}),
+			newInputs: buildInputs(sql, sink, []string{src}),
 			wantSkip:  false,
 		},
 		{
 			name:      "SQL same but sources changed does not skip",
 			oldInputs: buildInputs(sql, sink, []string{`"db"."schema"."old_src"`}),
+			newInputs: buildInputs(sql, sink, []string{src}),
 			wantSkip:  false,
 		},
 	}
@@ -89,7 +100,7 @@ func TestQueryCheck_SkipsDescribeWhenInputsUnchanged(t *testing.T) {
 				// reaching the DB (no credentials configured so any DB attempt would fail).
 				resp, err := Query{}.Check(context.Background(), infer.CheckRequest{
 					OldInputs: tt.oldInputs,
-					NewInputs: newInputs,
+					NewInputs: tt.newInputs,
 				})
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
@@ -109,7 +120,7 @@ func TestQueryCheck_SkipsDescribeWhenInputsUnchanged(t *testing.T) {
 					}()
 					_, _ = Query{}.Check(context.Background(), infer.CheckRequest{
 						OldInputs: tt.oldInputs,
-						NewInputs: newInputs,
+						NewInputs: tt.newInputs,
 					})
 					return false
 				}()
