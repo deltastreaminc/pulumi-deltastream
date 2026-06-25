@@ -102,10 +102,15 @@ func (Query) Check(ctx context.Context, req infer.CheckRequest) (infer.CheckResp
 		return infer.CheckResponse[QueryArgs]{Inputs: args, Failures: failures}, nil
 	}
 
-	// Skip DESCRIBE when SQL is unchanged from the prior deploy. This prevents re-validating
-	// stale RESUME FROM QUERY ID references that may have been garbage-collected by the server
-	// while the query is still running correctly.
-	if oldVal, ok := req.OldInputs.GetOk("sql"); ok && oldVal.IsString() && oldVal.AsString() == args.SQL {
+	// Skip DESCRIBE when all relevant inputs (sql, sink, sources) are unchanged from the
+	// prior deploy. This prevents re-validating stale RESUME FROM QUERY ID references that
+	// may have been garbage-collected while the query is still running correctly.
+	// We decode OldInputs to include sinkRelationFqn and sourceRelationFqns in the
+	// comparison so that user changes to those fields always trigger re-validation.
+	if oldArgs, _, oerr := infer.DefaultCheck[QueryArgs](ctx, req.OldInputs); oerr == nil &&
+		oldArgs.SQL == args.SQL &&
+		oldArgs.SinkRelationFqn == args.SinkRelationFqn &&
+		stringSlicesEqual(oldArgs.SourceRelationFqns, args.SourceRelationFqns) {
 		return infer.CheckResponse[QueryArgs]{Inputs: args, Failures: failures}, nil
 	}
 

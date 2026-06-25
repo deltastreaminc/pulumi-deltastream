@@ -22,46 +22,60 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/property"
 )
 
-// TestQueryCheck_SkipsDescribeWhenSQLUnchanged verifies that Query.Check returns no failures
-// and does not attempt to open a DB connection when the SQL is identical to the prior deploy
-// (OldInputs["sql"] == new SQL). This is consistent with the same guard in Application.Check
-// and guards against future additions of resume-style clauses in INSERT INTO queries.
-func TestQueryCheck_SkipsDescribeWhenSQLUnchanged(t *testing.T) {
+// TestQueryCheck_SkipsDescribeWhenInputsUnchanged verifies that Query.Check returns no failures
+// and does not attempt a DB connection when all inputs (SQL, sink, sources) match the prior
+// deploy. This mirrors the same guard in Application.Check and guards against future additions
+// of resume-style clauses in INSERT INTO queries.
+func TestQueryCheck_SkipsDescribeWhenInputsUnchanged(t *testing.T) {
 	t.Parallel()
 
 	const sql = `INSERT INTO "db"."schema"."sink" SELECT * FROM "db"."schema"."src";`
+	const src = `"db"."schema"."src"`
+	const sink = `"db"."schema"."sink"`
+
+	buildInputs := func(sqlStr, sinkFqn string, sources []string) property.Map {
+		srcVals := make([]property.Value, len(sources))
+		for i, s := range sources {
+			srcVals[i] = property.New(s)
+		}
+		return property.NewMap(map[string]property.Value{
+			"sql":                property.New(sqlStr),
+			"sinkRelationFqn":    property.New(sinkFqn),
+			"sourceRelationFqns": property.New(property.NewArray(srcVals)),
+		})
+	}
+
+	newInputs := buildInputs(sql, sink, []string{src})
 
 	tests := []struct {
-		name     string
-		oldSQL   string // empty means no OldInputs["sql"] key
-		newSQL   string
-		wantSkip bool
-		sources  []string
-		sink     string
+		name      string
+		oldInputs property.Map
+		wantSkip  bool
 	}{
 		{
-			name:     "unchanged SQL skips DESCRIBE",
-			oldSQL:   sql,
-			newSQL:   sql,
-			wantSkip: true,
-			sources:  []string{`"db"."schema"."src"`},
-			sink:     `"db"."schema"."sink"`,
+			name:      "all inputs unchanged skips DESCRIBE",
+			oldInputs: buildInputs(sql, sink, []string{src}),
+			wantSkip:  true,
 		},
 		{
-			name:     "no OldInputs (first create) does not skip",
-			oldSQL:   "",
-			newSQL:   sql,
-			wantSkip: false,
-			sources:  []string{`"db"."schema"."src"`},
-			sink:     `"db"."schema"."sink"`,
+			name:      "no OldInputs (first create) does not skip",
+			oldInputs: property.Map{},
+			wantSkip:  false,
 		},
 		{
-			name:     "changed SQL does not skip",
-			oldSQL:   sql + " -- modified",
-			newSQL:   sql,
-			wantSkip: false,
-			sources:  []string{`"db"."schema"."src"`},
-			sink:     `"db"."schema"."sink"`,
+			name:      "changed SQL does not skip",
+			oldInputs: buildInputs(sql+" -- modified", sink, []string{src}),
+			wantSkip:  false,
+		},
+		{
+			name:      "SQL same but sink changed does not skip",
+			oldInputs: buildInputs(sql, `"db"."schema"."old_sink"`, []string{src}),
+			wantSkip:  false,
+		},
+		{
+			name:      "SQL same but sources changed does not skip",
+			oldInputs: buildInputs(sql, sink, []string{`"db"."schema"."old_src"`}),
+			wantSkip:  false,
 		},
 	}
 
@@ -70,40 +84,23 @@ func TestQueryCheck_SkipsDescribeWhenSQLUnchanged(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			oldInputs := property.Map{}
-			if tt.oldSQL != "" {
-				oldInputs = property.NewMap(map[string]property.Value{
-					"sql": property.New(tt.oldSQL),
-				})
-			}
-
-			newInputs := property.NewMap(map[string]property.Value{
-				"sql": property.New(tt.newSQL),
-				"sourceRelationFqns": property.New(property.NewArray(func() []property.Value {
-					vals := make([]property.Value, len(tt.sources))
-					for i, s := range tt.sources {
-						vals[i] = property.New(s)
-					}
-					return vals
-				}())),
-				"sinkRelationFqn": property.New(tt.sink),
-			})
-
 			if tt.wantSkip {
+				// When all inputs are unchanged the provider must return no failures without
+				// reaching the DB (no credentials configured so any DB attempt would fail).
 				resp, err := Query{}.Check(context.Background(), infer.CheckRequest{
-					OldInputs: oldInputs,
+					OldInputs: tt.oldInputs,
 					NewInputs: newInputs,
 				})
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
 				if len(resp.Failures) != 0 {
-					t.Errorf("expected no failures when SQL unchanged, got: %v", resp.Failures)
+					t.Errorf("expected no failures when inputs unchanged, got: %v", resp.Failures)
 				}
 			} else {
-				// When SQL changes or OldInputs is absent the provider proceeds past the guard
-				// and attempts to open a DB connection (which panics without a provider context).
-				// A panic here confirms that DESCRIBE was not skipped.
+				// When inputs change or OldInputs is absent the provider proceeds past the
+				// guard and attempts to open a DB connection, which panics without a provider
+				// context. A panic here confirms DESCRIBE was not skipped.
 				panicked := func() (p bool) {
 					defer func() {
 						if r := recover(); r != nil {
@@ -111,13 +108,13 @@ func TestQueryCheck_SkipsDescribeWhenSQLUnchanged(t *testing.T) {
 						}
 					}()
 					_, _ = Query{}.Check(context.Background(), infer.CheckRequest{
-						OldInputs: oldInputs,
+						OldInputs: tt.oldInputs,
 						NewInputs: newInputs,
 					})
 					return false
 				}()
 				if !panicked {
-					t.Error("expected DB access (panic) when SQL is changed or new, but Check returned without error")
+					t.Error("expected DB access (panic) when inputs changed or new, but Check returned without error")
 				}
 			}
 		})
