@@ -40,7 +40,17 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+| # | Gate | Status |
+|---|------|--------|
+| 1 | **Go only** — all implementation is in Go source under `provider/`; no generated files edited directly | ☐ |
+| 2 | **SQL via MCP** — all DeltaStream SQL syntax and sys table schemas looked up via `deltastream-docs` MCP before implementation | ☐ |
+| 3 | **SQL documented** — every SQL statement used is from the [SQL Reference](https://docs.deltastream.io/reference/sql-syntax); no custom/undocumented SQL | ☐ |
+| 4 | **Sys tables used** — object status/readiness polled via `deltastream.sys.[object]` tables per [System Tables](https://docs.deltastream.io/reference/sql-syntax/systables) | ☐ |
+| 5 | **Schema/SDK not edited** — `schema.json` and Node.js/Python SDKs are generated artifacts; only Go source modified | ☐ |
+| 6 | **Integration tests planned** — test coverage is included in the task list; no feature lands without integration tests | ☐ |
+| 7 | **Single project** — no new project added unless justified in Complexity Tracking table below | ☐ |
+| 8 | **Complexity justified** — any abstraction or pattern beyond the simplest approach is documented in the Complexity Tracking table | ☐ |
+| 9 | **Pulumi config** — all provider configuration is via Pulumi config blocks, not hardcoded values | ☐ |
 
 ## Project Structure
 
