@@ -1,0 +1,10 @@
+{
+    "$schema": "https://opencode.ai/config.json",
+    "mcp": {
+        "deltastream-docs": {
+            "type": "remote",
+            "url": "https://docs.deltastream.io/~gitbook/mcp",
+            "enabled": true,
+        }
+    }
+}
