@@ -117,6 +117,7 @@ jobs:
     uses: ./.github/workflows/publish.yml
     permissions:
       contents: write
+      id-token: write  # Required for NuGet Trusted Publishing (OIDC) in publish_sdk job
     secrets: inherit
     with:
       version: ${{ needs.prerequisites.outputs.version }}
