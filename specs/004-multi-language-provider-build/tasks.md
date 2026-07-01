@@ -37,7 +37,7 @@ description: "Tasks for feature 004-multi-language-provider-build"
 **⚠️ CRITICAL**: No CI push should happen until local build succeeds.
 
 - [x] T003 Install mise if not present: `curl https://mise.run | sh` and activate in shell
-- [x] T004 Run `mise install` in repo root; verify all tools listed in `.config/mise.toml` are installed at pinned versions (go 1.25.6, node 20.19.5, python 3.11.15, dotnet 8.0.20, java corretto-11, pulumi 3.246.0, yarn 1.22.22, golangci-lint 1.64.8)
+- [x] T004 Run `mise install` in repo root; verify all tools listed in `.config/mise.toml` are installed at pinned versions (go 1.25.11, node 22.23.1, python 3.11.15, dotnet 8.0.20, java corretto-11, pulumi 3.246.0, yarn 1.22.22, golangci-lint 2.12.2)
 - [x] T005 Run `make provider` to build the provider binary; confirm `bin/pulumi-resource-deltastream` exists and is executable
 - [x] T006 Run `make schema` to regenerate `schema.json`; confirm it contains `publisher`, `logoUrl`, `keywords`, and all five language blocks using: `jq '{publisher,logoUrl,keywords,language:.language|keys}' schema.json`
 - [x] T007 Run `make test_provider` to confirm provider unit tests pass without credentials
@@ -75,16 +75,16 @@ description: "Tasks for feature 004-multi-language-provider-build"
 
 ### Implementation for User Story 2
 
-- [ ] T016 [US2] Commit all new and modified files to a feature branch and push to GitHub: `git add .config/ .devcontainer/ scripts/ .golangci.yml mise.toml Makefile schema.json .gitignore .github/workflows/ docs/ specs/004-multi-language-provider-build/ && git commit -m "feat: add mise devcontainer multi-language build CI"`
-- [ ] T017 [US2] Open a pull request against `main` and observe the CI workflow run; verify jobs `prerequisites`, `build_sdk (nodejs)`, `build_sdk (python)`, `build_sdk (dotnet)`, `build_sdk (go)`, `build_sdk (java)`, and `lint` all appear
-- [ ] T018 [US2] Confirm the `prerequisites` job completes: provider binary built, schema generated, `provider-bin` and `schema.json` artifacts uploaded
-- [ ] T019 [US2] Confirm all 5 `build_sdk` matrix jobs pass independently (check each language tab in Actions)
-- [ ] T020 [US2] Confirm the `lint` job passes; if it fails, run `make lint` locally, fix violations with `make lint.fix`, and push fixes
+- [x] T016 [US2] Commit all new and modified files to a feature branch and push to GitHub: `git add .config/ .devcontainer/ scripts/ .golangci.yml mise.toml Makefile schema.json .gitignore .github/workflows/ docs/ specs/004-multi-language-provider-build/ && git commit -m "feat: add mise devcontainer multi-language build CI"`
+- [x] T017 [US2] Open a pull request against `main` and observe the CI workflow run; verify jobs `prerequisites`, `build_sdk (nodejs)`, `build_sdk (python)`, `build_sdk (dotnet)`, `build_sdk (go)`, `build_sdk (java)`, and `lint` all appear
+- [x] T018 [US2] Confirm the `prerequisites` job completes: provider binary built, schema generated, `provider-bin` and `schema.json` artifacts uploaded
+- [x] T019 [US2] Confirm all 5 `build_sdk` matrix jobs pass independently (check each language tab in Actions)
+- [x] T020 [US2] Confirm the `lint` job passes; if it fails, run `make lint` locally, fix violations with `make lint.fix`, and push fixes
 - [ ] T021 [US2] Confirm the `test` job is skipped if the PR is from a fork (validate FR-015); if testing from the same repo, confirm test job runs after build_sdk completes
-- [ ] T022 [US2] Confirm the schema diff comment appears on the PR (may show "No previous release found" on first run — that is correct behaviour)
-- [ ] T023 [P] [US2] Fix any `build_sdk (dotnet)` failures: check that `sdk/dotnet/` is generated correctly and `dotnet build` succeeds; common issue is missing `version.txt` (the Makefile writes it at generate time)
-- [ ] T024 [P] [US2] Fix any `build_sdk (java)` failures: verify Java SDK generation succeeds with `make generate_java` locally; the Java generator may require `pulumi plugin install` — document any additional setup in `README.md` if needed (plan.md T-005)
-- [ ] T025 [US2] Verify `pulumi/provider-version-action@v2` produces a version string without a leading `v` (the Makefile enforces this with an error guard); check the `prerequisites` job output for the computed version (plan.md T-006)
+- [x] T022 [US2] Confirm the schema diff comment appears on the PR (may show "No previous release found" on first run — that is correct behaviour)
+- [x] T023 [P] [US2] Fix any `build_sdk (dotnet)` failures: check that `sdk/dotnet/` is generated correctly and `dotnet build` succeeds; common issue is missing `version.txt` (the Makefile writes it at generate time)
+- [x] T024 [P] [US2] Fix any `build_sdk (java)` failures: verify Java SDK generation succeeds with `make generate_java` locally; the Java generator may require `pulumi plugin install` — document any additional setup in `README.md` if needed (plan.md T-005)
+- [x] T025 [US2] Verify `pulumi/provider-version-action@v2` produces a version string without a leading `v` (the Makefile enforces this with an error guard); check the `prerequisites` job output for the computed version (plan.md T-006)
 
 **Checkpoint**: PR CI passes all 7 jobs; fork gating works; schema diff comment posted.
 
@@ -126,12 +126,12 @@ description: "Tasks for feature 004-multi-language-provider-build"
 
 ### Implementation for User Story 4
 
-- [ ] T038 [US4] Verify `schema.json` contains all required Pulumi Registry metadata: `publisher`, `logoUrl` (pointing to an existing file), `keywords` with `category/database` and `kind/native`, `description`
-- [ ] T039 [US4] Verify `docs/deltastream-logo.png` (or `.svg`) exists at the path referenced in `schema.json` `logoUrl` (created in T015); if not, complete T015 first
-- [ ] T040 [US4] Review `docs/_index.md` for completeness: title matches `displayName` from `schema.json`, examples are accurate, resources list is current
-- [ ] T041 [US4] Review `docs/installation-configuration.md` for completeness: all config options match `schema.json` config variables, install commands are accurate for all 4 languages
+- [x] T038 [US4] Verify `schema.json` contains all required Pulumi Registry metadata: `publisher`, `logoUrl` (pointing to an existing file), `keywords` with `category/database` and `kind/native`, `description`
+- [x] T039 [US4] Verify `docs/deltastream-logo.png` (or `.svg`) exists at the path referenced in `schema.json` `logoUrl` (created in T015); if not, complete T015 first
+- [x] T040 [US4] Review `docs/_index.md` for completeness: title matches `displayName` from `schema.json`, examples are accurate, resources list is current
+- [x] T041 [US4] Review `docs/installation-configuration.md` for completeness: all config options match `schema.json` config variables, install commands are accurate for all 4 languages
 - [ ] T042 [US4] Fork `github.com/pulumi/registry` and clone locally
-- [ ] T043 [US4] Add entry to `community-packages/package-list.json` in the cloned `pulumi/registry` fork: `{ "repoSlug": "deltastreaminc/pulumi-deltastream", "schemaFile": "schema.json" }`
+- [ ] T043 [US4] Add entry to `community-packages/package-list.json` in the cloned `pulumi/registry` fork: `{ "repoSlug": "deltastreaminc/pulumi-deltastream", "schemaFile": "provider/cmd/pulumi-resource-deltastream/schema.json" }`
 - [ ] T044 [US4] Copy `docs/_index.md` and `docs/installation-configuration.md` to `themes/default/content/registry/packages/deltastream/` in the `pulumi/registry` fork
 - [ ] T045 [US4] Open a PR against `pulumi/registry` main branch with the above changes; reference the community package submission guide and a working example (e.g., `pulumi/registry#10358`)
 
@@ -146,7 +146,7 @@ description: "Tasks for feature 004-multi-language-provider-build"
 - [ ] T046 [P] Update `README.md` to document the new developer workflow: `mise install`, `make build`, `make test_provider`, devcontainer usage — add a "Development" section if not present
 - [ ] T047 [P] Update `README.md` to list all five language package names and install commands so users can find the correct package for their language
 - [ ] T048 Run the full quickstart validation checklist from `specs/004-multi-language-provider-build/quickstart.md` scenarios 1–9 and confirm all pass
-- [ ] T049 [P] Remove any `sdk/go/pulumi-deltastream/` files that should be regenerated (if the Go SDK was committed at an old version); run `make generate_go` and commit the refreshed SDK
+- [x] T049 [P] Remove any `sdk/go/pulumi-deltastream/` files that should be regenerated (if the Go SDK was committed at an old version); run `make generate_go` and commit the refreshed SDK
 - [ ] T050 Update `specs/004-multi-language-provider-build/spec.md` status from `Draft` to `Complete`
 
 ---

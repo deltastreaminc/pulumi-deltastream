@@ -4,7 +4,7 @@
 
 **Created**: 2026-06-29
 
-**Status**: Draft
+**Status**: In Progress (US1 ✅, US2 ✅, US3 pending release secrets, US4 pending registry PR)
 
 **Input**: User description: "based on above research, transition to using devcontainers, mise, multi-language builds, and updated CI jobs. also read https://www.pulumi.com/docs/iac/guides/building-extending/packages/publishing-packages/ and prepare to publish the pulumi provider"
 
