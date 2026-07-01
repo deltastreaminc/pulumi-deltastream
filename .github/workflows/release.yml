@@ -120,8 +120,8 @@ jobs:
     secrets: inherit
     with:
       version: ${{ needs.prerequisites.outputs.version }}
-      isPrerelease: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.isPrerelease == 'true' || contains(needs.prerequisites.outputs.version, '-') }}
-      setLatestRelease: ${{ github.event.base_ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.event_name == 'push' }}
+      isPrerelease: ${{ fromJSON(github.event_name == 'workflow_dispatch' && github.event.inputs.isPrerelease == 'true' || contains(needs.prerequisites.outputs.version, '-')) }}
+      setLatestRelease: ${{ fromJSON(github.event.base_ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.event_name == 'push') }}
       skipGoSdk: false
 
   verify:
