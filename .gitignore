@@ -29,12 +29,16 @@ dist/
 examples/credentials.yaml
 **/coverage.txt
 .make/
-.config/
 
-# Generated SDK files
+# mise installs Pulumi CLI here; do not commit the binaries
+.pulumi/
+
+# Generated SDK files — regenerated fresh each build
 !sdk/nodejs/.gitkeep
 sdk/nodejs/
 sdk/python/
+sdk/dotnet/
+sdk/java/
 
 # Temporary files
 .tmp/

@@ -1,0 +1,178 @@
+name: Publish
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      isPrerelease:
+        required: true
+        type: boolean
+      setLatestRelease:
+        required: true
+        type: boolean
+      skipGoSdk:
+        default: false
+        type: boolean
+        description: Skip publishing the Go SDK (used for prerelease builds on default branch)
+
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup mise
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        env:
+          MISE_FETCH_REMOTE_VERSIONS_TIMEOUT: 30s
+        with:
+          version: 2026.6.14
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          cache_save: false
+
+      - name: Download all provider tarballs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pulumi-resource-deltastream-v${{ inputs.version }}-*.tar.gz
+          path: dist/
+          merge-multiple: true
+
+      - name: Download schema
+        uses: actions/download-artifact@v4
+        with:
+          name: schema.json
+          path: dist/
+
+      - name: Generate checksums
+        working-directory: dist/
+        run: |
+          shasum -a 256 pulumi-resource-deltastream-v*.tar.gz \
+            > "pulumi-deltastream_${{ inputs.version }}_checksums.txt"
+
+      - name: Compute schema diff summary
+        id: schema_diff
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          {
+            echo "summary<<$EOF"
+            LAST=$(gh release view --json tagName -q .tagName 2>/dev/null || echo "NONE")
+            if [ "$LAST" != "NONE" ]; then
+              schema-tools compare \
+                --provider deltastream \
+                --old-commit "$LAST" \
+                --repository github://api.github.com/deltastreaminc \
+                --new-path dist/schema.json || true
+            fi
+            echo "$EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
+        with:
+          tag_name: v${{ inputs.version }}
+          name: Release v${{ inputs.version }}
+          prerelease: ${{ inputs.isPrerelease }}
+          draft: ${{ inputs.isPrerelease }}
+          make_latest: ${{ inputs.setLatestRelease }}
+          body: ${{ steps.schema_diff.outputs.summary }}
+          generate_release_notes: true
+          files: |
+            dist/pulumi-resource-deltastream-v*.tar.gz
+            dist/pulumi-deltastream_*_checksums.txt
+            dist/schema.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish_sdk:
+    name: publish_sdk
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write  # Required for NuGet Trusted Publishing (OIDC) and PyPI Trusted Publishing
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: true
+
+      - name: Setup mise
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        env:
+          MISE_FETCH_REMOTE_VERSIONS_TIMEOUT: 30s
+        with:
+          version: 2026.6.14
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          cache_save: false
+
+      # Setup Node so npm auth is configured (mise handles the actual node version)
+      - name: Setup Node (for npm auth)
+        uses: actions/setup-node@v4
+        with:
+          registry-url: https://registry.npmjs.org
+
+      - name: Download all SDK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: sdk-*
+          path: sdk-download/
+          merge-multiple: false
+
+      - name: Reconstruct sdk/ directory layout
+        run: |
+          mkdir -p sdk
+          for lang in nodejs python dotnet go java; do
+            if [ -d "sdk-download/sdk-${lang}" ]; then
+              cp -r "sdk-download/sdk-${lang}" "sdk/${lang}"
+            fi
+          done
+
+      # Exchange the GitHub OIDC token for a short-lived NuGet API key (valid 1 hour).
+      # No NUGET_API_TOKEN secret needed — Trusted Publishing is configured on nuget.org:
+      #   Owner: deltastreaminc, Repo: pulumi-deltastream, Workflow: publish.yml
+      - name: NuGet login (Trusted Publishing / OIDC)
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: ${{ secrets.NUGET_USERNAME }}
+
+      - name: Publish all language SDKs
+        uses: pulumi/pulumi-package-publisher@v0.0.23
+        with:
+          sdk: all,!java
+          version: ${{ inputs.version }}
+        env:
+          PYPI_USERNAME: __token__
+          PYPI_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Temporary key obtained via OIDC above — no long-lived secret required
+          NUGET_PUBLISH_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+          # Java Maven credentials (add when Maven Central publishing is ready)
+          # SIGNING_KEY: ${{ secrets.JAVA_SIGNING_KEY }}
+          # SIGNING_KEY_ID: ${{ secrets.JAVA_SIGNING_KEY_ID }}
+          # SIGNING_PASSWORD: ${{ secrets.JAVA_SIGNING_PASSWORD }}
+          # PUBLISH_REPO_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          # PUBLISH_REPO_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+
+      - name: Publish Go SDK
+        if: inputs.skipGoSdk == false
+        uses: pulumi/publish-go-sdk-action@v1
+        with:
+          repository: ${{ github.repository }}
+          base-ref: ${{ github.sha }}
+          source: sdk
+          path: sdk
+          version: ${{ inputs.version }}
+          additive: false
+          files: |
+            go.*
+            go/**
+            !*.tar.gz

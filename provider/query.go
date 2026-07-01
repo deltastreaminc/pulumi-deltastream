@@ -35,6 +35,7 @@ import (
 // Query resource implements continuous INSERT INTO ... SELECT ... queries.
 type Query struct{}
 
+// Annotate sets descriptions on Query and its fields for schema generation.
 func (q *Query) Annotate(a infer.Annotator) {
 	a.Describe(q, "Continuous query resource (INSERT INTO ... SELECT ...) streaming data from source relations into a sink relation.")
 }
@@ -63,6 +64,7 @@ type QueryState struct {
 	OwnerOut     *string `pulumi:"owner"`
 }
 
+// Annotate sets descriptions on QueryState fields for schema generation.
 func (s *QueryState) Annotate(a infer.Annotator) {
 	a.Describe(&s.State, "Lifecycle state of the query (starting|running|terminate_requested|terminated|errored)")
 	a.Describe(&s.QueryID, "System-generated query identifier")
@@ -120,14 +122,14 @@ func (Query) Check(ctx context.Context, req infer.CheckRequest) (infer.CheckResp
 	if oerr != nil { // tolerate missing connection in preview
 		return infer.CheckResponse[QueryArgs]{Inputs: args, Failures: failures}, nil
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(args.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
 	ctx2, conn, cerr := withOrgRole(ctx, db, org, role)
 	if cerr != nil {
 		return infer.CheckResponse[QueryArgs]{Inputs: args, Failures: failures}, nil
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	kind, plan, derr := describeQuery(ctx2, conn, args.SQL)
 	if derr != nil {
@@ -158,7 +160,7 @@ func (Query) Check(ctx context.Context, req infer.CheckRequest) (infer.CheckResp
 	return infer.CheckResponse[QueryArgs]{Inputs: args, Failures: failures}, nil
 }
 
-// Diff: all fields replace except owner (update)
+// Diff computes property differences; all fields trigger replacement except owner (in-place update).
 func (Query) Diff(ctx context.Context, req infer.DiffRequest[QueryArgs, QueryState]) (infer.DiffResponse, error) {
 	diff := map[string]p.PropertyDiff{}
 	if req.State.SQL != "" && req.State.SQL != req.Inputs.SQL {
@@ -212,14 +214,14 @@ func (Query) Create(ctx context.Context, req infer.CreateRequest[QueryArgs]) (in
 	if err != nil {
 		return infer.CreateResponse[QueryState]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(in.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
 	ctx2, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.CreateResponse[QueryState]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	kind, plan, derr := describeQuery(ctx2, conn, in.SQL)
 	if derr != nil {
@@ -279,14 +281,14 @@ func (Query) Read(ctx context.Context, req infer.ReadRequest[QueryArgs, QuerySta
 	if err != nil {
 		return infer.ReadResponse[QueryArgs, QueryState]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(req.State.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
 	ctx2, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.ReadResponse[QueryArgs, QueryState]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	qrow, err := lookupQuery(ctx2, conn, req.ID)
 	if err != nil {
 		var sqlErr ds.ErrSQLError
@@ -332,14 +334,14 @@ func (Query) Update(ctx context.Context, req infer.UpdateRequest[QueryArgs, Quer
 	if err != nil {
 		return infer.UpdateResponse[QueryState]{}, err
 	}
-	defer db.Close()
+	defer db.Close()                                     //nolint:errcheck
 	role := ptr.Deref(st.Owner, ptr.Deref(cfg.Role, "")) // current owner
 	org := ptr.Deref(cfg.Organization, "")
 	ctx2, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.UpdateResponse[QueryState]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	stmt := fmt.Sprintf("ALTER QUERY %s OWNER TO %s;", st.QueryID, *req.Inputs.Owner)
 	if _, err := conn.ExecContext(ctx2, stmt); err != nil {
 		return infer.UpdateResponse[QueryState]{}, fmt.Errorf("failed altering owner: %w", err)
@@ -366,14 +368,14 @@ func (Query) Delete(ctx context.Context, req infer.DeleteRequest[QueryState]) (i
 	if err != nil {
 		return infer.DeleteResponse{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(req.State.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
 	ctx2, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.DeleteResponse{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	if req.State.State != "terminated" && req.State.State != "terminate_requested" {
 		term := fmt.Sprintf("TERMINATE QUERY %s;", req.ID)
 		if _, err := conn.ExecContext(ctx2, term); err != nil {
@@ -419,7 +421,7 @@ func executeQuerySQL(ctx context.Context, conn *sql.Conn, sqlText string) (query
 	if err != nil {
 		return queryArtifactDDL{}, err
 	}
-	defer result.Close()
+	defer result.Close() //nolint:errcheck
 	for result.Next() {
 		if rerr := result.Err(); rerr != nil {
 			return queryArtifactDDL{}, rerr

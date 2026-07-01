@@ -106,7 +106,7 @@ func withOrgRole(ctx context.Context, db *sql.DB, org, role string) (context.Con
 		return ctx, nil, err
 	}
 
-	conn.Raw(func(driverConn interface{}) error {
+	if err := conn.Raw(func(driverConn interface{}) error {
 		if c, ok := driverConn.(*ds.Conn); ok {
 			rsctx := c.GetContext()
 			if org != "" {
@@ -120,7 +120,10 @@ func withOrgRole(ctx context.Context, db *sql.DB, org, role string) (context.Con
 			c.SetContext(rsctx)
 		}
 		return nil
-	})
+	}); err != nil {
+		_ = conn.Close()
+		return ctx, nil, fmt.Errorf("failed to configure connection context: %w", err)
+	}
 	if err := conn.PingContext(ctx); err != nil {
 		_ = conn.Close()
 		return ctx, nil, fmt.Errorf("failed to establish connection: %w", err)

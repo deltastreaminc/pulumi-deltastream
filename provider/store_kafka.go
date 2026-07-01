@@ -78,7 +78,8 @@ func validateKafkaInputs(k *KafkaInputs) []p.CheckFailure {
 		}
 	}
 	if k.TlsDisabled != nil && *k.TlsDisabled {
-		// tlsCaCertFile ignored when TLS disabled
+		// tlsCaCertFile is ignored when TLS is disabled; no action required.
+		_ = k.TlsDisabled
 	}
 	return failures
 }
@@ -246,14 +247,14 @@ func storeKafkaUpdate(ctx context.Context, req infer.UpdateRequest[StoreArgs, St
 	if err != nil {
 		return infer.UpdateResponse[StoreState]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(input.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
 	ctx, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.UpdateResponse[StoreState]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	parts := make([]string, 0, len(changes))
 	for k, v := range changes {
 		parts = append(parts, fmt.Sprintf("'%s' = %s", k, v))

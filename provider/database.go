@@ -31,6 +31,7 @@ import (
 // Database is the controller for the DeltaStream database resource.
 type Database struct{}
 
+// Annotate sets descriptions on Database and its fields for schema generation.
 func (d *Database) Annotate(a infer.Annotator) {
 	a.Describe(&d, "A DeltaStream database resource that provides namespacing for streams, changelogs, and other objects")
 }
@@ -43,6 +44,7 @@ type DatabaseArgs struct {
 	Owner *string `pulumi:"owner,optional"`
 }
 
+// Annotate sets descriptions on DatabaseArgs fields for schema generation.
 func (d *DatabaseArgs) Annotate(a infer.Annotator) {
 	a.Describe(&d.Name, "The name of the database to create. If the name is case sensitive, wrap it in quotes.")
 	a.Describe(&d.Owner, "Optional owning role. When set, statements execute as this role during create.")
@@ -56,6 +58,7 @@ type DatabaseState struct {
 	CreatedAt string `pulumi:"createdAt"`
 }
 
+// Annotate sets descriptions on DatabaseState fields for schema generation.
 func (d *DatabaseState) Annotate(a infer.Annotator) {
 	a.Describe(&d.Owner, "The owner of the database")
 	a.Describe(&d.CreatedAt, "The timestamp when the database was created")
@@ -78,7 +81,7 @@ func (Database) Create(ctx context.Context, req infer.CreateRequest[DatabaseArgs
 	if err != nil {
 		return infer.CreateResponse[DatabaseState]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	role := ptr.Deref(input.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
@@ -87,7 +90,7 @@ func (Database) Create(ctx context.Context, req infer.CreateRequest[DatabaseArgs
 	if err != nil {
 		return infer.CreateResponse[DatabaseState]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	// CREATE DATABASE using identifier quoting helper (quoteIdent already adds quotes)
 	stmt := fmt.Sprintf("CREATE DATABASE %s;", quoteIdent(input.Name))
@@ -129,7 +132,7 @@ func (Database) Read(
 	if err != nil {
 		return infer.ReadResponse[DatabaseArgs, DatabaseState]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	role := ptr.Deref(req.State.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
@@ -138,7 +141,7 @@ func (Database) Read(
 	if err != nil {
 		return infer.ReadResponse[DatabaseArgs, DatabaseState]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	owner, createdAt, err := lookupDatabase(ctx, conn, req.ID)
 	if err != nil {
@@ -182,7 +185,7 @@ func (Database) Delete(ctx context.Context, req infer.DeleteRequest[DatabaseStat
 	if err != nil {
 		return infer.DeleteResponse{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	role := ptr.Deref(req.State.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
@@ -191,7 +194,7 @@ func (Database) Delete(ctx context.Context, req infer.DeleteRequest[DatabaseStat
 	if err != nil {
 		return infer.DeleteResponse{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	if _, err := conn.ExecContext(ctx, fmt.Sprintf("DROP DATABASE %s;", quoteIdent(req.ID))); err != nil {
 		return infer.DeleteResponse{}, fmt.Errorf("failed to delete database: %w", err)

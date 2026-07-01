@@ -1,0 +1,75 @@
+name: Build SDK
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
+jobs:
+  build_sdk:
+    name: build_sdk (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    strategy:
+      # Fail fast unless triggered by Renovate (allow all languages to attempt)
+      fail-fast: ${{ !contains(github.actor, 'renovate') }}
+      matrix:
+        language:
+          - nodejs
+          - python
+          - dotnet
+          - go
+          - java
+    env:
+      PROVIDER_VERSION: ${{ inputs.version }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup mise
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        env:
+          MISE_FETCH_REMOTE_VERSIONS_TIMEOUT: 30s
+        with:
+          version: 2026.6.14
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          cache_save: false
+
+      - name: Setup Go module cache (Go SDK only)
+        if: matrix.language == 'go'
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          cache-dependency-path: |
+            go.sum
+            sdk/go/pulumi-deltastream/go.sum
+
+      - name: Download provider binary
+        uses: actions/download-artifact@v4
+        with:
+          name: provider-bin
+          path: bin/
+
+      - name: Download schema
+        uses: actions/download-artifact@v4
+        with:
+          name: schema.json
+          path: provider/cmd/pulumi-resource-deltastream/
+
+      - name: Restore executable permissions
+        run: chmod +x bin/pulumi-resource-deltastream
+
+      - name: Restore make sentinels (schema + provider already done)
+        run: |
+          mkdir -p .make provider/cmd/pulumi-resource-deltastream
+          touch .make/schema
+
+      - name: Build SDK (${{ matrix.language }})
+        run: make build_${{ matrix.language }}
+
+      - name: Upload SDK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdk-${{ matrix.language }}
+          path: sdk/${{ matrix.language }}/
+          retention-days: 7

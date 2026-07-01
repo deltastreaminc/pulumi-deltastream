@@ -3,281 +3,130 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*.*.*'
+      # Prerelease tags (e.g. v1.0.0-rc.1) also trigger the pipeline;
+      # publish.yml receives isPrerelease=true for tags containing '-' and
+      # creates a draft GitHub Release rather than a public one.
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., v1.2.3)'
+        description: 'Version to release (e.g., 1.2.3 — no leading v)'
         required: true
       isPrerelease:
-        description: 'Mark this release as a prerelease/draft'
+        description: 'Mark as prerelease/draft'
         required: false
         type: boolean
         default: false
 
 jobs:
-  setup:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.setver.outputs.version }}
-      is_prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
-      version_no_v: ${{ steps.norm.outputs.version_no_v }}
-    steps:
-      - name: Derive version
-        id: setver
-        run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          else
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          fi
-      - name: Detect prerelease
-        id: prerelease
-        run: |
-          V='${{ steps.setver.outputs.version }}'
-          # Consider prerelease if input flag set OR semantic includes '-' qualifier
-          if [ "${{ github.event.inputs.isPrerelease }}" = "true" ] || echo "$V" | grep -q '-' ; then
-            echo 'is_prerelease=true' >> $GITHUB_OUTPUT
-          else
-            echo 'is_prerelease=false' >> $GITHUB_OUTPUT
-          fi
-      - name: Normalize version (strip leading v)
-        id: norm
-        run: |
-          V='${{ steps.setver.outputs.version }}'
-          NV=${V#v}
-            echo "version_no_v=$NV" >> $GITHUB_OUTPUT
+  prerequisites:
+    uses: ./.github/workflows/prerequisites.yml
+    permissions:
+      contents: read
+      pull-requests: write
+    secrets: inherit
+    with:
+      is_pr: false
+      default_branch: ${{ github.event.repository.default_branch }}
 
-  build:
-    needs: setup
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        arch: [amd64, arm64]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25.x'
-      - name: Setup Pulumi
-        uses: pulumi/actions@v5
-        with:
-          pulumi-version: '>=3.182.0'
-      - name: Build artifacts
-        run: BUILD_OS="${{ matrix.os == 'ubuntu-latest' && 'linux' || 'darwin' }}" BUILD_ARCH='${{ matrix.arch }}' PROVIDER_VERSION=${{ needs.setup.outputs.version_no_v }} make build schema generate build_sdks
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'yarn'
-          cache-dependency-path: sdk/nodejs/yarn.lock
-      - name: Install Yarn
-        run: npm install -g yarn@1.22.22
-      - name: Duplicate binary into OS-ARCH folder
-        run: |
-          OS="${{ matrix.os == 'ubuntu-latest' && 'linux' || 'darwin' }}"
-          ARCH='${{ matrix.arch }}'
-          mkdir -p bin/${OS}-${ARCH}
-          cp bin/pulumi-resource-deltastream bin/${OS}-${ARCH}/pulumi-resource-deltastream
-      - name: Upload provider build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: provider-build-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'darwin' }}-${{ matrix.arch }}
-          path: |
-            bin/**
-            schema.json
-            sdk/**
-      - name: Upload yarn.lock artifact
-        if: matrix.os == 'ubuntu-latest' && matrix.arch == 'amd64'
-        uses: actions/upload-artifact@v4
-        with:
-          name: yarn-lock
-          path: sdk/nodejs/yarn.lock
+  build_provider:
+    needs: prerequisites
+    uses: ./.github/workflows/build_provider.yml
+    secrets: inherit
+    with:
+      version: ${{ needs.prerequisites.outputs.version }}
 
-  package:
-    needs: [setup, build]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: provider-build-*
-          path: dist/raw
-          merge-multiple: true
-      - name: Create tarballs & checksums
-        run: |
-          set -euo pipefail
-          VERSION='${{ needs.setup.outputs.version }}'
-          mkdir -p dist/pkg
-          for d in dist/raw/bin/*-*; do
-            [ -d "$d" ] || continue
-            base=$(basename "$d")
-            OS=${base%-*}
-            ARCH=${base#*-}
-            work=dist/pkg/work
-            mkdir -p "$work"
-            cp "$d/pulumi-resource-deltastream" "$work/pulumi-resource-deltastream"
-            chmod +x "$work/pulumi-resource-deltastream"
-            if [ -f dist/raw/schema.json ]; then cp dist/raw/schema.json "$work/schema.json"; fi
-            [ -f LICENSE ] && cp LICENSE "$work/" || true
-            [ -f README.md ] && cp README.md "$work/" || true
-            tarball="pulumi-resource-deltastream-${VERSION}-${OS}-${ARCH}.tar.gz"
-            tar -czf dist/pkg/${tarball} -C "$work" .
-            rm -rf "$work"
-          done
-          (cd dist/pkg && shasum -a 256 pulumi-resource-deltastream-v*.tar.gz > pulumi-deltastream_${VERSION}_checksums.txt)
-          # Copy schema.json standalone
-          [ -f dist/raw/schema.json ] && cp dist/raw/schema.json dist/pkg/schema.json || true
-      - name: Build nodejs SDK tarball
-        run: |
-          set -euo pipefail
-          cd dist/raw
-          tar -zcf sdk/nodejs.tar.gz -C sdk/nodejs .
-      - name: Upload nodejs sdk artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: nodejs-sdk.tar.gz
-          path: dist/raw/sdk/nodejs.tar.gz
-      - name: Upload packaged artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: provider-packages
-          path: dist/pkg/*
+  build_sdk:
+    needs: prerequisites
+    uses: ./.github/workflows/build_sdk.yml
+    secrets: inherit
+    with:
+      version: ${{ needs.prerequisites.outputs.version }}
+
+  lint:
+    uses: ./.github/workflows/lint.yml
+    secrets: inherit
 
   test:
-    needs: [setup, build]
+    needs: [prerequisites, build_provider, build_sdk]
     runs-on: ubuntu-latest
+    env:
+      MISE_ENV: test
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup mise (with test overlay)
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        env:
+          MISE_FETCH_REMOTE_VERSIONS_TIMEOUT: 30s
         with:
-          go-version: '1.25.x'
-      - name: Setup Pulumi
-        uses: pulumi/actions@v5
+          version: 2026.6.14
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          cache_save: false
+
+      - name: Setup Go module cache
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
-          pulumi-version: '>=3.182.0'
-      - name: Download provider build artifacts
+          cache-dependency-path: go.sum
+
+      - name: Download linux-amd64 provider binary
         uses: actions/download-artifact@v4
         with:
-          name: provider-build-linux-amd64
-          path: .
-      - name: Restore executable permissions
+          name: pulumi-resource-deltastream-v${{ needs.prerequisites.outputs.version }}-linux-amd64.tar.gz
+          path: dist/
+
+      - name: Extract provider binary for tests
         run: |
-          if ls bin/* 1> /dev/null 2>&1; then chmod +x bin/* || true; fi
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+          mkdir -p bin
+          tar -xzf dist/pulumi-resource-deltastream-v${{ needs.prerequisites.outputs.version }}-linux-amd64.tar.gz \
+            -C bin/ pulumi-resource-deltastream
+          chmod +x bin/pulumi-resource-deltastream
+
+      - name: Download SDK artifacts
+        uses: actions/download-artifact@v4
         with:
-          node-version: '20.x'
-          cache: 'yarn'
-          cache-dependency-path: sdk/nodejs/yarn.lock
-      - name: Install Yarn
-        run: npm install -g yarn@1.22.22
-      - name: Setup credentials
+          pattern: sdk-*
+          path: sdk-download/
+          merge-multiple: false
+
+      - name: Restore SDK layout and sentinels
         run: |
-          mkdir -p ~/.pulumi-deltastream
-          echo "${{ secrets.CI_CREDENTIALS_YAML }}" > examples/credentials.yaml
-      - name: Run tests
-        run: make install_sdks test
+          mkdir -p sdk
+          for lang in nodejs python dotnet go java; do
+            if [ -d "sdk-download/sdk-${lang}" ]; then
+              cp -r "sdk-download/sdk-${lang}" "sdk/${lang}"
+            fi
+          done
+          mkdir -p .make && touch .make/schema .make/mise_install \
+            .make/generate_nodejs .make/generate_go .make/generate_python \
+            .make/generate_dotnet .make/generate_java \
+            .make/build_nodejs .make/build_go .make/build_python \
+            .make/build_dotnet .make/build_java
+
+      - name: Setup credentials
+        run: echo "${{ secrets.CI_CREDENTIALS_YAML }}" > examples/credentials.yaml
+
+      - name: Install SDKs and run integration tests
+        # Only nodejs and go SDKs are needed for the integration tests
+        run: make install_nodejs_sdk install_go_sdk test
 
   publish:
-    needs: [setup, package, test]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Setup Go for schema-tools & Go SDK publish
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25.x'
-      - name: Install pulumictl
-        uses: jaxxstorm/action-install-gh-release@6096f2a2bbfee498ced520b6922ac2c06e990ed2 # v2.1.0
-        with:
-          tag: v0.0.46
-          repo: pulumi/pulumictl
-      - name: Install Schema Tools
-        uses: jaxxstorm/action-install-gh-release@6096f2a2bbfee498ced520b6922ac2c06e990ed2 # v2.1.0
-        with:
-          repo: pulumi/schema-tools
-      - name: Download provider packages
-        uses: actions/download-artifact@v4
-        with:
-          name: provider-packages
-          path: dist/pkg
-      - name: Configure npm
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
-      - name: Publish Node SDK (package publisher)
-        uses: pulumi/pulumi-package-publisher@v0.0.23
-        with:
-          sdk: nodejs
-          version: ${{ needs.setup.outputs.version_no_v }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Download provider build artifacts (for schema)
-        uses: actions/download-artifact@v4
-        with:
-          pattern: provider-build-*
-          path: dist/raw
-          merge-multiple: true
-      - name: Schema diff summary
-        id: schema_diff
-        run: |
-          LAST=$(gh release view --json tagName -q .tagName || echo 'NONE')
-          echo 'summary<<EOF' >> $GITHUB_OUTPUT
-          if [ "$LAST" != 'NONE' ]; then
-            if [ -f dist/raw/schema.json ]; then
-              schema-tools compare --provider deltastream --old-commit "$LAST" --repository github://api.github.com/deltastreaminc --new-commit --local-path=dist/raw/schema.json || true
-            fi
-          fi
-          echo 'EOF' >> $GITHUB_OUTPUT
-      # - name: Publish Go SDK
-      #   uses: pulumi/publish-go-sdk-action@v1
-      #   with:
-      #     repository: ${{ github.repository }}
-      #     base-ref: ${{ github.sha }}
-      #     source: sdk
-      #     path: sdk
-      #     version: ${{ needs.setup.outputs.version_no_v }}
-      #     additive: false
-      #     files: |
-      #       go.*
-      #       go/**
-      #       !*.tar.gz
-      - name: Create GitHub Release (packaged)
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.setup.outputs.version }}
-          name: Release ${{ needs.setup.outputs.version }}
-          prerelease: ${{ needs.setup.outputs.is_prerelease == 'true' }}
-          draft: ${{ needs.setup.outputs.is_prerelease == 'true' }}
-          body: ${{ steps.schema_diff.outputs.summary }}
-          files: |
-            dist/pkg/pulumi-resource-deltastream-v*.tar.gz
-            dist/pkg/pulumi-deltastream_*_checksums.txt
-            dist/pkg/schema.json
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    name: publish
+    needs: [prerequisites, build_provider, build_sdk, test, lint]
+    uses: ./.github/workflows/publish.yml
+    permissions:
+      contents: write
+    secrets: inherit
+    with:
+      version: ${{ needs.prerequisites.outputs.version }}
+      isPrerelease: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.isPrerelease == 'true' || contains(needs.prerequisites.outputs.version, '-') }}
+      setLatestRelease: ${{ github.event.base_ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.event_name == 'push' }}
+      skipGoSdk: false
 
   verify:
-    needs: [setup, publish]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Node smoke test
-        run: |
-          npm init -y >/dev/null 2>&1
-          npm install @deltastream/pulumi-deltastream@${{ needs.setup.outputs.version_no_v }}
-          node -e "require('@deltastream/pulumi-deltastream'); console.log('Node SDK ok')"
-      # - name: Go smoke test
-      #   run: |
-      #     go mod init verify || true
-      #     go get github.com/deltastreaminc/pulumi-deltastream/sdk/go/pulumi-deltastream@${{ needs.setup.outputs.version }}
-      #     echo 'package main; import _ "github.com/deltastreaminc/pulumi-deltastream/sdk/go/pulumi-deltastream"; func main(){}' > main.go
-      #     go build ./...
+    needs: [prerequisites, publish]
+    uses: ./.github/workflows/verify-release.yml
+    secrets: inherit
+    with:
+      version: ${{ needs.prerequisites.outputs.version }}

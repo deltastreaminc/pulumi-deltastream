@@ -1,13 +1,15 @@
 {
   "name": "deltastream",
-  "displayName": "pulumi-deltastream",
-  "description": "A Pulumi provider for DeltaStream.",
+  "displayName": "DeltaStream",
+  "description": "A Pulumi native provider for DeltaStream — manage databases, namespaces, stores, streams, queries, and applications as infrastructure.",
   "homepage": "https://www.deltastream.io",
   "pluginDownloadURL": "github://api.github.com/deltastreaminc",
   "namespace": "deltastream",
   "language": {
     "csharp": {
-      "respectSchemaVersion": true
+      "respectSchemaVersion": true,
+      "packageName": "Pulumi.DeltaStream",
+      "rootNamespace": "Pulumi"
     },
     "go": {
       "generateResourceContainerTypes": true,
@@ -22,7 +24,16 @@
       "pyproject": {
         "enabled": true
       },
-      "respectSchemaVersion": true
+      "respectSchemaVersion": true,
+      "packageName": "pulumi_deltastream"
+    },
+    "java": {
+      "basePackage": "io.deltastream.pulumi.deltastream",
+      "buildFiles": "gradle",
+      "gradleNexusPublishPluginVersion": "1.3.0",
+      "dependencies": {
+        "com.pulumi:pulumi": "1.0.0"
+      }
     }
   },
   "config": {
@@ -973,5 +984,13 @@
         "type": "object"
       }
     }
-  }
+  },
+  "publisher": "DeltaStream Inc.",
+  "logoUrl": "https://raw.githubusercontent.com/deltastreaminc/pulumi-deltastream/main/docs/deltastream-logo.png",
+  "keywords": [
+    "pulumi",
+    "deltastream",
+    "category/database",
+    "kind/native"
+  ]
 }

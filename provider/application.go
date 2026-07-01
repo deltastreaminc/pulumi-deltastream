@@ -33,6 +33,7 @@ import (
 // Application resource implements multi-sink APPLICATION queries.
 type Application struct{}
 
+// Annotate sets descriptions on Application and its fields for schema generation.
 func (a *Application) Annotate(an infer.Annotator) {
 	an.Describe(a, "Application resource for multi-sink streaming applications with virtual intermediate relations.")
 }
@@ -59,6 +60,7 @@ type ApplicationState struct {
 	OwnerOut      *string `pulumi:"owner"`
 }
 
+// Annotate sets descriptions on ApplicationState fields for schema generation.
 func (s *ApplicationState) Annotate(a infer.Annotator) {
 	a.Describe(&s.State, "Lifecycle state of the application (starting|running|terminate_requested|terminated|errored)")
 	a.Describe(&s.ApplicationID, "System-generated application identifier")
@@ -116,7 +118,7 @@ func (Application) Check(ctx context.Context, req infer.CheckRequest) (infer.Che
 	if oerr != nil { // tolerate missing connection in preview
 		return infer.CheckResponse[ApplicationArgs]{Inputs: args, Failures: failures}, nil
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	role := ptr.Deref(args.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
@@ -124,7 +126,7 @@ func (Application) Check(ctx context.Context, req infer.CheckRequest) (infer.Che
 	if cerr != nil {
 		return infer.CheckResponse[ApplicationArgs]{Inputs: args, Failures: failures}, nil
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	kind, plan, derr := describeApplication(ctx2, conn, args.SQL)
 	if derr != nil {
@@ -213,7 +215,7 @@ func (Application) Check(ctx context.Context, req infer.CheckRequest) (infer.Che
 	return infer.CheckResponse[ApplicationArgs]{Inputs: args, Failures: failures}, nil
 }
 
-// Diff: all fields replace except owner (update)
+// Diff computes property differences; all fields trigger replacement except owner (in-place update).
 func (Application) Diff(ctx context.Context, req infer.DiffRequest[ApplicationArgs, ApplicationState]) (infer.DiffResponse, error) {
 	diff := map[string]p.PropertyDiff{}
 
@@ -252,7 +254,7 @@ func (Application) Create(ctx context.Context, req infer.CreateRequest[Applicati
 	if err != nil {
 		return infer.CreateResponse[ApplicationState]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	role := ptr.Deref(in.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
@@ -260,7 +262,7 @@ func (Application) Create(ctx context.Context, req infer.CreateRequest[Applicati
 	if err != nil {
 		return infer.CreateResponse[ApplicationState]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	kind, plan, derr := describeApplication(ctx2, conn, in.SQL)
 	if derr != nil {
@@ -390,7 +392,7 @@ func (Application) Read(ctx context.Context, req infer.ReadRequest[ApplicationAr
 	if err != nil {
 		return infer.ReadResponse[ApplicationArgs, ApplicationState]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	role := ptr.Deref(req.State.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
@@ -398,7 +400,7 @@ func (Application) Read(ctx context.Context, req infer.ReadRequest[ApplicationAr
 	if err != nil {
 		return infer.ReadResponse[ApplicationArgs, ApplicationState]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	qrow, err := lookupQuery(ctx2, conn, req.ID)
 	if err != nil {
@@ -450,7 +452,7 @@ func (Application) Update(ctx context.Context, req infer.UpdateRequest[Applicati
 	if err != nil {
 		return infer.UpdateResponse[ApplicationState]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	role := ptr.Deref(st.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
@@ -458,7 +460,7 @@ func (Application) Update(ctx context.Context, req infer.UpdateRequest[Applicati
 	if err != nil {
 		return infer.UpdateResponse[ApplicationState]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	stmt := fmt.Sprintf("ALTER QUERY %s OWNER TO %s;", st.ApplicationID, *req.Inputs.Owner)
 	if _, err := conn.ExecContext(ctx2, stmt); err != nil {
@@ -489,7 +491,7 @@ func (Application) Delete(ctx context.Context, req infer.DeleteRequest[Applicati
 	if err != nil {
 		return infer.DeleteResponse{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	role := ptr.Deref(req.State.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
@@ -497,7 +499,7 @@ func (Application) Delete(ctx context.Context, req infer.DeleteRequest[Applicati
 	if err != nil {
 		return infer.DeleteResponse{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	if req.State.State != "terminated" && req.State.State != "terminate_requested" {
 		term := fmt.Sprintf("TERMINATE QUERY %s;", req.ID)
