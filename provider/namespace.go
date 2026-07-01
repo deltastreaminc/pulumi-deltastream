@@ -31,6 +31,7 @@ import (
 // Namespace resource represents a schema within a database.
 type Namespace struct{}
 
+// Annotate sets descriptions on Namespace and its fields for schema generation.
 func (n *Namespace) Annotate(a infer.Annotator) {
 	a.Describe(&n, "Namespace resource providing logical grouping within a database for streams and other objects")
 }
@@ -42,6 +43,7 @@ type NamespaceArgs struct {
 	Owner    *string `pulumi:"owner,optional"`
 }
 
+// Annotate sets descriptions on NamespaceArgs fields for schema generation.
 func (a *NamespaceArgs) Annotate(an infer.Annotator) {
 	an.Describe(&a.Database, "Name of the database containing the namespace")
 	an.Describe(&a.Name, "Name of the namespace")
@@ -54,6 +56,7 @@ type NamespaceState struct {
 	CreatedAt string `pulumi:"createdAt"`
 }
 
+// Annotate sets descriptions on NamespaceState fields for schema generation.
 func (s *NamespaceState) Annotate(a infer.Annotator) {
 	a.Describe(&s.CreatedAt, "Creation timestamp of the namespace")
 }
@@ -74,7 +77,7 @@ func (Namespace) Create(ctx context.Context, req infer.CreateRequest[NamespaceAr
 	if err != nil {
 		return infer.CreateResponse[NamespaceState]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	role := ptr.Deref(in.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
@@ -83,7 +86,7 @@ func (Namespace) Create(ctx context.Context, req infer.CreateRequest[NamespaceAr
 	if err != nil {
 		return infer.CreateResponse[NamespaceState]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	stmt := fmt.Sprintf("CREATE SCHEMA %s IN DATABASE %s;", quoteIdent(in.Name), quoteIdent(in.Database))
 	if _, err := conn.ExecContext(ctx, stmt); err != nil {
@@ -109,7 +112,7 @@ func (Namespace) Read(ctx context.Context, req infer.ReadRequest[NamespaceArgs, 
 	if err != nil {
 		return infer.ReadResponse[NamespaceArgs, NamespaceState]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	role := ptr.Deref(req.State.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
@@ -117,7 +120,7 @@ func (Namespace) Read(ctx context.Context, req infer.ReadRequest[NamespaceArgs, 
 	if err != nil {
 		return infer.ReadResponse[NamespaceArgs, NamespaceState]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	dbName := req.State.Database
 	nsName := req.State.Name
@@ -145,7 +148,7 @@ func (Namespace) Delete(ctx context.Context, req infer.DeleteRequest[NamespaceSt
 	if err != nil {
 		return infer.DeleteResponse{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	role := ptr.Deref(req.State.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
@@ -153,7 +156,7 @@ func (Namespace) Delete(ctx context.Context, req infer.DeleteRequest[NamespaceSt
 	if err != nil {
 		return infer.DeleteResponse{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	stmt := fmt.Sprintf("DROP SCHEMA %s.%s;", quoteIdent(req.State.Database), quoteIdent(req.State.Name))
 	if _, err := conn.ExecContext(ctx, stmt); err != nil {

@@ -50,6 +50,7 @@ type GetDatabaseResult struct {
 // GetDatabase looks up a single database by name.
 type GetDatabase struct{}
 
+// Invoke executes the GetDatabase function.
 func (GetDatabase) Invoke(ctx context.Context, req infer.FunctionRequest[GetDatabaseArgs]) (infer.FunctionResponse[GetDatabaseResult], error) {
 	args := req.Input
 	cfg := infer.GetConfig[Config](ctx)
@@ -57,14 +58,14 @@ func (GetDatabase) Invoke(ctx context.Context, req infer.FunctionRequest[GetData
 	if err != nil {
 		return infer.FunctionResponse[GetDatabaseResult]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(cfg.Role, "")
 	org := ptr.Deref(cfg.Organization, "")
 	ctx2, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.FunctionResponse[GetDatabaseResult]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	owner, createdAt, err := lookupDatabase(ctx2, conn, args.Name)
 	if err != nil {
 		var sqlErr ds.ErrSQLError
@@ -88,26 +89,27 @@ type GetDatabasesResult struct {
 // GetDatabases lists all databases visible to the caller.
 type GetDatabases struct{}
 
+// Invoke executes the GetDatabases function.
 func (GetDatabases) Invoke(ctx context.Context, req infer.FunctionRequest[GetDatabasesArgs]) (infer.FunctionResponse[GetDatabasesResult], error) {
 	cfg := infer.GetConfig[Config](ctx)
 	db, err := openDB(ctx, &cfg)
 	if err != nil {
 		return infer.FunctionResponse[GetDatabasesResult]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(cfg.Role, "")
 	org := ptr.Deref(cfg.Organization, "")
 	ctx2, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.FunctionResponse[GetDatabasesResult]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	q := fmt.Sprintf(`SELECT name, "owner", created_at FROM deltastream.sys."databases" ORDER BY name LIMIT %d;`, invokeMaxRows+1)
 	rows, err := conn.QueryContext(ctx2, q)
 	if err != nil {
 		return infer.FunctionResponse[GetDatabasesResult]{}, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 	var out []GetDatabaseResult
 	count := 0
 	for rows.Next() {
@@ -131,7 +133,6 @@ func (GetDatabases) Invoke(ctx context.Context, req infer.FunctionRequest[GetDat
 	return infer.FunctionResponse[GetDatabasesResult]{Output: GetDatabasesResult{Databases: out}}, nil
 }
 
-// Namespace related invoke functions
 // GetNamespaceArgs specifies the database and namespace to look up.
 type GetNamespaceArgs struct {
 	// Database containing the namespace.
@@ -155,6 +156,7 @@ type GetNamespaceResult struct {
 // GetNamespace looks up a single namespace.
 type GetNamespace struct{}
 
+// Invoke executes the GetNamespace function.
 func (GetNamespace) Invoke(ctx context.Context, req infer.FunctionRequest[GetNamespaceArgs]) (infer.FunctionResponse[GetNamespaceResult], error) {
 	args := req.Input
 	cfg := infer.GetConfig[Config](ctx)
@@ -162,14 +164,14 @@ func (GetNamespace) Invoke(ctx context.Context, req infer.FunctionRequest[GetNam
 	if err != nil {
 		return infer.FunctionResponse[GetNamespaceResult]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(cfg.Role, "")
 	org := ptr.Deref(cfg.Organization, "")
 	ctx2, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.FunctionResponse[GetNamespaceResult]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	owner, createdAt, err := lookupNamespace(ctx2, conn, args.Database, args.Name)
 	if err != nil {
 		var sqlErr ds.ErrSQLError
@@ -196,6 +198,7 @@ type GetNamespacesResult struct {
 // GetNamespaces lists namespaces for a database.
 type GetNamespaces struct{}
 
+// Invoke executes the GetNamespaces function.
 func (GetNamespaces) Invoke(ctx context.Context, req infer.FunctionRequest[GetNamespacesArgs]) (infer.FunctionResponse[GetNamespacesResult], error) {
 	args := req.Input
 	cfg := infer.GetConfig[Config](ctx)
@@ -203,20 +206,20 @@ func (GetNamespaces) Invoke(ctx context.Context, req infer.FunctionRequest[GetNa
 	if err != nil {
 		return infer.FunctionResponse[GetNamespacesResult]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(cfg.Role, "")
 	org := ptr.Deref(cfg.Organization, "")
 	ctx2, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.FunctionResponse[GetNamespacesResult]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	q := fmt.Sprintf(`SELECT name, "owner", created_at FROM deltastream.sys."schemas" WHERE database_name = %s ORDER BY name LIMIT %d;`, quoteString(args.Database), invokeMaxRows+1)
 	rows, err := conn.QueryContext(ctx2, q)
 	if err != nil {
 		return infer.FunctionResponse[GetNamespacesResult]{}, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 	var list []GetNamespaceResult
 	count := 0
 	for rows.Next() {
@@ -240,7 +243,6 @@ func (GetNamespaces) Invoke(ctx context.Context, req infer.FunctionRequest[GetNa
 	return infer.FunctionResponse[GetNamespacesResult]{Output: GetNamespacesResult{Namespaces: list}}, nil
 }
 
-// Store related invoke functions (initial Kafka support; generic list)
 // GetStoreArgs defines the name of the store to retrieve.
 type GetStoreArgs struct {
 	// Store name.
@@ -266,6 +268,7 @@ type GetStoreResult struct {
 // GetStore retrieves a single store by name.
 type GetStore struct{}
 
+// Invoke executes the GetStore function.
 func (GetStore) Invoke(ctx context.Context, req infer.FunctionRequest[GetStoreArgs]) (infer.FunctionResponse[GetStoreResult], error) {
 	args := req.Input
 	cfg := infer.GetConfig[Config](ctx)
@@ -273,14 +276,14 @@ func (GetStore) Invoke(ctx context.Context, req infer.FunctionRequest[GetStoreAr
 	if err != nil {
 		return infer.FunctionResponse[GetStoreResult]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(cfg.Role, "")
 	org := ptr.Deref(cfg.Organization, "")
 	ctx2, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.FunctionResponse[GetStoreResult]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	q := fmt.Sprintf(`SELECT type, status, "owner", created_at, updated_at FROM deltastream.sys."stores" WHERE name = %s;`, quoteString(args.Name))
 	row := conn.QueryRowContext(ctx2, q)
 	var typ, state, owner string
@@ -306,26 +309,27 @@ type GetStoresResult struct {
 // GetStores lists all stores visible to the caller.
 type GetStores struct{}
 
+// Invoke executes the GetStores function.
 func (GetStores) Invoke(ctx context.Context, req infer.FunctionRequest[GetStoresArgs]) (infer.FunctionResponse[GetStoresResult], error) {
 	cfg := infer.GetConfig[Config](ctx)
 	db, err := openDB(ctx, &cfg)
 	if err != nil {
 		return infer.FunctionResponse[GetStoresResult]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(cfg.Role, "")
 	org := ptr.Deref(cfg.Organization, "")
 	ctx2, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.FunctionResponse[GetStoresResult]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	q := fmt.Sprintf(`SELECT name, type, status, "owner", created_at, updated_at FROM deltastream.sys."stores" ORDER BY name LIMIT %d;`, invokeMaxRows+1)
 	rows, err := conn.QueryContext(ctx2, q)
 	if err != nil {
 		return infer.FunctionResponse[GetStoresResult]{}, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 	var list []GetStoreResult
 	count := 0
 	for rows.Next() {

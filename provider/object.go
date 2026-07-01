@@ -33,6 +33,7 @@ import (
 // DeltaStreamObject represents a DeltaStream relation (stream, changelog, table).
 type DeltaStreamObject struct{}
 
+// Annotate sets descriptions on DeltaStreamObject and its fields for schema generation.
 func (o *DeltaStreamObject) Annotate(a infer.Annotator) {
 	a.Describe(o, "DeltaStreamObject (relation) resource supporting STREAM, CHANGELOG, TABLE creation via SQL DDL")
 }
@@ -74,6 +75,7 @@ type DeltaStreamObjectState struct {
 	UpdatedAt string `pulumi:"updatedAt"`
 }
 
+// Annotate sets descriptions on DeltaStreamObjectState fields for schema generation.
 func (s *DeltaStreamObjectState) Annotate(a infer.Annotator) {
 	a.Describe(&s.Type, "Type of the relation (stream|changelog|table)")
 	a.Describe(&s.State, "Provisioning state of the relation")
@@ -119,7 +121,7 @@ func (DeltaStreamObject) Check(ctx context.Context, req infer.CheckRequest) (inf
 	if openErr != nil { // tolerate inability to connect during preview
 		return infer.CheckResponse[DeltaStreamObjectArgs]{Inputs: args, Failures: failures}, nil
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	role := ptr.Deref(args.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
@@ -127,7 +129,7 @@ func (DeltaStreamObject) Check(ctx context.Context, req infer.CheckRequest) (inf
 	if crErr != nil { // skip planning if role/org application fails
 		return infer.CheckResponse[DeltaStreamObjectArgs]{Inputs: args, Failures: failures}, nil
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	if err := setSQLContext(conn, args.Database, args.Namespace, args.Store); err != nil {
 		failures = append(failures, p.CheckFailure{Property: "sql", Reason: fmt.Sprintf("failed to set context: %v", err)})
@@ -202,7 +204,7 @@ func (DeltaStreamObject) Create(ctx context.Context, req infer.CreateRequest[Del
 	if err != nil {
 		return infer.CreateResponse[DeltaStreamObjectState]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 
 	role := ptr.Deref(in.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
@@ -210,7 +212,7 @@ func (DeltaStreamObject) Create(ctx context.Context, req infer.CreateRequest[Del
 	if err != nil {
 		return infer.CreateResponse[DeltaStreamObjectState]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	if err := setSQLContext(conn, in.Database, in.Namespace, in.Store); err != nil {
 		return infer.CreateResponse[DeltaStreamObjectState]{}, fmt.Errorf("failed setting sql context: %w", err)
@@ -272,14 +274,14 @@ func (DeltaStreamObject) Read(ctx context.Context, req infer.ReadRequest[DeltaSt
 	if err != nil {
 		return infer.ReadResponse[DeltaStreamObjectArgs, DeltaStreamObjectState]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(req.State.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
 	ctx, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.ReadResponse[DeltaStreamObjectArgs, DeltaStreamObjectState]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	row, err := lookupRelation(ctx, conn, req.State.Path)
 	if err != nil {
@@ -327,7 +329,7 @@ func (DeltaStreamObject) Update(ctx context.Context, req infer.UpdateRequest[Del
 	if err != nil {
 		return infer.UpdateResponse[DeltaStreamObjectState]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	// Use provider role (not the new owner yet) to perform alteration; assume it has privileges
 	role := ptr.Deref(st.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
@@ -335,7 +337,7 @@ func (DeltaStreamObject) Update(ctx context.Context, req infer.UpdateRequest[Del
 	if err != nil {
 		return infer.UpdateResponse[DeltaStreamObjectState]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	typ := strings.ToUpper(st.Type)
 	stmt := fmt.Sprintf("ALTER %s %s OWNER TO %s;", typ, getFQN(st.Path), *req.Inputs.Owner)
 	if _, err := conn.ExecContext(ctx2, stmt); err != nil {
@@ -364,14 +366,14 @@ func (DeltaStreamObject) Delete(ctx context.Context, req infer.DeleteRequest[Del
 	if err != nil {
 		return infer.DeleteResponse{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(req.State.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
 	ctx, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.DeleteResponse{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	_ = dropRelation(ctx, conn, req.State.FQN)
 	_ = waitForRelationGone(ctx, conn, req.State.Path, time.Minute)
 	return infer.DeleteResponse{}, nil
@@ -520,11 +522,14 @@ func provisionalID(in DeltaStreamObjectArgs) string {
 	return fmt.Sprintf("%s/%s/%s", in.Database, in.Namespace, in.Store)
 }
 
+// GetObjectArgs defines the arguments for looking up a single DeltaStream relation.
 type GetObjectArgs struct {
 	Database  string `pulumi:"database"`
 	Namespace string `pulumi:"namespace"`
 	Name      string `pulumi:"name"`
 }
+
+// GetObjectResult contains the fields returned for a single DeltaStream relation.
 type GetObjectResult struct {
 	Database  string `pulumi:"database"`
 	Namespace string `pulumi:"namespace"`
@@ -537,8 +542,10 @@ type GetObjectResult struct {
 	UpdatedAt string `pulumi:"updatedAt"`
 }
 
+// GetObject looks up a single DeltaStream relation by database, namespace, and name.
 type GetObject struct{}
 
+// Invoke executes the GetObject function.
 func (GetObject) Invoke(ctx context.Context, req infer.FunctionRequest[GetObjectArgs]) (infer.FunctionResponse[GetObjectResult], error) {
 	args := req.Input
 	cfg := infer.GetConfig[Config](ctx)
@@ -546,14 +553,14 @@ func (GetObject) Invoke(ctx context.Context, req infer.FunctionRequest[GetObject
 	if err != nil {
 		return infer.FunctionResponse[GetObjectResult]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(cfg.Role, "")
 	org := ptr.Deref(cfg.Organization, "")
 	ctx, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.FunctionResponse[GetObjectResult]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	q := fmt.Sprintf(`SELECT name, fqn, relation_type, "owner", "state", created_at, updated_at FROM deltastream.sys."relations" WHERE database_name = %s AND schema_name = %s AND name = %s;`, quoteString(args.Database), quoteString(args.Namespace), quoteString(args.Name))
 	row := conn.QueryRowContext(ctx, q)
 	var name, fqn, typ, owner, state string
@@ -568,15 +575,21 @@ func (GetObject) Invoke(ctx context.Context, req infer.FunctionRequest[GetObject
 	return infer.FunctionResponse[GetObjectResult]{Output: res}, nil
 }
 
+// GetObjectsArgs defines the arguments for listing DeltaStream relations in a namespace.
 type GetObjectsArgs struct {
 	Database  string `pulumi:"database"`
 	Namespace string `pulumi:"namespace"`
 }
+
+// GetObjectsResult contains the list of DeltaStream relations returned.
 type GetObjectsResult struct {
 	Objects []GetObjectResult `pulumi:"objects"`
 }
+
+// GetObjects lists all DeltaStream relations in a given database and namespace.
 type GetObjects struct{}
 
+// Invoke executes the GetObjects function.
 func (GetObjects) Invoke(ctx context.Context, req infer.FunctionRequest[GetObjectsArgs]) (infer.FunctionResponse[GetObjectsResult], error) {
 	args := req.Input
 	cfg := infer.GetConfig[Config](ctx)
@@ -584,20 +597,20 @@ func (GetObjects) Invoke(ctx context.Context, req infer.FunctionRequest[GetObjec
 	if err != nil {
 		return infer.FunctionResponse[GetObjectsResult]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(cfg.Role, "")
 	org := ptr.Deref(cfg.Organization, "")
 	ctx, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.FunctionResponse[GetObjectsResult]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	q := fmt.Sprintf(`SELECT name, fqn, relation_type, "owner", "state", created_at, updated_at FROM deltastream.sys."relations" WHERE database_name = %s AND schema_name = %s;`, quoteString(args.Database), quoteString(args.Namespace))
 	rows, err := conn.QueryContext(ctx, q)
 	if err != nil {
 		return infer.FunctionResponse[GetObjectsResult]{}, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 	var list []GetObjectResult
 	for rows.Next() {
 		var name, fqn, typ, owner, state string

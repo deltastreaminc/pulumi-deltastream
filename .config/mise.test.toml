@@ -1,0 +1,5 @@
+# Tools used only during test runs. Activated by setting MISE_ENV=test.
+# Used in the test CI job: env: MISE_ENV: test
+
+[tools]
+"aqua:gotestyourself/gotestsum" = "1.12.0"

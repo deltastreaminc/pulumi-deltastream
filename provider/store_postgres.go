@@ -100,14 +100,14 @@ func storePostgresUpdate(ctx context.Context, req infer.UpdateRequest[StoreArgs,
 	if err != nil {
 		return infer.UpdateResponse[StoreState]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(req.State.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
 	ctx, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.UpdateResponse[StoreState]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	changes := map[string]string{}
 	if req.Inputs.Postgres.Username != req.State.Postgres.Username {

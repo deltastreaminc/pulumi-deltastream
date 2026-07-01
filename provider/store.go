@@ -38,6 +38,7 @@ const (
 // Store resource (Kafka, Postgres, Snowflake) representing an external data store.
 type Store struct{}
 
+// Annotate sets descriptions on Store and its fields for schema generation.
 func (s *Store) Annotate(a infer.Annotator) {
 	a.Describe(s, "Store resource supporting external data store connectivity (initial Kafka support)")
 }
@@ -63,6 +64,7 @@ type StoreState struct {
 	OwnerOut  string `pulumi:"owner"`
 }
 
+// Annotate sets descriptions on StoreState fields for schema generation.
 func (s *StoreState) Annotate(a infer.Annotator) {
 	a.Describe(&s.Type, "Type of the store")
 	a.Describe(&s.State, "Provisioning state of the store")
@@ -121,14 +123,14 @@ func (Store) Create(ctx context.Context, req infer.CreateRequest[StoreArgs]) (in
 	if err != nil {
 		return infer.CreateResponse[StoreState]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(input.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
 	ctx, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.CreateResponse[StoreState]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	switch {
 	case input.Kafka != nil:
 		if err := storeKafkaCreate(ctx, conn, &input); err != nil {
@@ -162,14 +164,14 @@ func (Store) Read(ctx context.Context, req infer.ReadRequest[StoreArgs, StoreSta
 	if err != nil {
 		return infer.ReadResponse[StoreArgs, StoreState]{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(req.State.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
 	ctx, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.ReadResponse[StoreArgs, StoreState]{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	sr, err := lookupStore(ctx, conn, req.ID)
 	if err != nil {
 		var sqlErr ds.ErrSQLError
@@ -208,14 +210,14 @@ func (Store) Delete(ctx context.Context, req infer.DeleteRequest[StoreState]) (i
 	if err != nil {
 		return infer.DeleteResponse{}, err
 	}
-	defer db.Close()
+	defer db.Close() //nolint:errcheck
 	role := ptr.Deref(req.State.Owner, ptr.Deref(cfg.Role, ""))
 	org := ptr.Deref(cfg.Organization, "")
 	ctx, conn, err := withOrgRole(ctx, db, org, role)
 	if err != nil {
 		return infer.DeleteResponse{}, err
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	stmt := fmt.Sprintf("DROP STORE %s;", quoteIdent(req.ID))
 	if _, err := conn.ExecContext(ctx, stmt); err != nil {
 		return infer.DeleteResponse{}, err
