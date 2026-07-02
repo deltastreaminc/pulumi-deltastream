@@ -57,6 +57,8 @@ func main() {
 
 		dbName := fmt.Sprintf("pulumi_app_db_%s", suffix)
 		kafkaStoreName := fmt.Sprintf("pulumi_app_kafka_%s", suffix)
+		sfStoreName := fmt.Sprintf("pulumi_snowflake_store_%s", suffix)
+		pgStoreName := fmt.Sprintf("pulumi_postgres_store_%s", suffix)
 
 		userlogChangelogName := fmt.Sprintf("pulumi_userlog_%s", suffix)
 		pgTableName := "pulumi_userlog"
@@ -88,7 +90,7 @@ func main() {
 		}
 
 		sfStore, err := deltastream.NewStore(ctx, "snowflake-store", &deltastream.StoreArgs{
-			Name: pulumi.String("pulumi_snowflake_store"),
+			Name: pulumi.String(sfStoreName),
 			Snowflake: (deltastream.SnowflakeInputsArgs{
 				Uris:          pulumi.String(uris),
 				AccountId:     pulumi.String(account),
@@ -104,7 +106,7 @@ func main() {
 		}
 
 		pgStore, err := deltastream.NewStore(ctx, "pgstore", &deltastream.StoreArgs{
-			Name: pulumi.String("pulumi_postgres_store"),
+			Name: pulumi.String(pgStoreName),
 			Postgres: &deltastream.PostgresInputsArgs{
 				Uris:        pulumi.String(pgUris),
 				Username:    pulumi.String(pgUser),
