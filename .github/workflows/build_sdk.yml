@@ -73,3 +73,20 @@ jobs:
           name: sdk-${{ matrix.language }}
           path: sdk/${{ matrix.language }}/
           retention-days: 7
+
+      # pulumi/pulumi-package-publisher (used by publish.yml for nodejs/python/dotnet/java)
+      # expects a same-run artifact literally named "<lang>-sdk.tar.gz" whose contents are a
+      # single "<lang>.tar.gz" tarball of the built SDK directory - see
+      # https://github.com/pulumi/pulumi-package-publisher#use. Go is published separately via
+      # pulumi/publish-go-sdk-action against the sdk-go artifact above, so it's excluded here.
+      - name: Package SDK for pulumi-package-publisher (${{ matrix.language }})
+        if: matrix.language != 'go'
+        run: tar -czf ${{ matrix.language }}.tar.gz -C sdk/${{ matrix.language }} .
+
+      - name: Upload pulumi-package-publisher artifact (${{ matrix.language }})
+        if: matrix.language != 'go'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.language }}-sdk.tar.gz
+          path: ${{ matrix.language }}.tar.gz
+          retention-days: 7

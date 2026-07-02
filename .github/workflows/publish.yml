@@ -65,11 +65,32 @@ jobs:
             echo "summary<<$EOF"
             LAST=$(gh release view --json tagName -q .tagName 2>/dev/null || echo "NONE")
             if [ "$LAST" != "NONE" ]; then
-              schema-tools compare \
-                --provider deltastream \
-                --old-commit "$LAST" \
-                --repository github://api.github.com/deltastreaminc \
-                --new-path dist/schema.json || true
+              # schema-tools compare --old-commit always fetches from the hardcoded
+              # provider/cmd/pulumi-resource-deltastream/schema.json path. That path only
+              # exists from #61 (2026-07-01) onward; releases at or before v0.4.3 still have
+              # schema.json at the repo root. Probe both locations so the diff keeps working
+              # for old-commit refs from either side of that move.
+              OLD_SCHEMA=""
+              for candidate in \
+                "provider/cmd/pulumi-resource-deltastream/schema.json" \
+                "schema.json"; do
+                if gh api -H "Accept: application/vnd.github.raw" \
+                     "repos/${{ github.repository }}/contents/${candidate}?ref=${LAST}" \
+                     > old-schema.json 2>/dev/null; then
+                  OLD_SCHEMA="old-schema.json"
+                  break
+                fi
+              done
+              if [ -n "$OLD_SCHEMA" ]; then
+                if ! schema-tools compare \
+                       --provider deltastream \
+                       --old-path "$OLD_SCHEMA" \
+                       --new-path dist/schema.json; then
+                  echo "_Schema diff unavailable: \`schema-tools compare\` failed against previous release \`$LAST\`._"
+                fi
+              else
+                echo "_Schema diff unavailable: could not fetch schema.json for previous release \`$LAST\`._"
+              fi
             fi
             echo "$EOF"
           } >> "$GITHUB_OUTPUT"
