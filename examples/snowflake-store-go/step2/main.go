@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha1"
+	"fmt"
 	"os"
 
 	ds "github.com/deltastreaminc/pulumi-deltastream/sdk/go/pulumi-deltastream"
@@ -26,8 +28,11 @@ func main() {
 		if err != nil {
 			return err
 		}
+		// Same suffix derivation as step1 so the store name is stable across the update.
+		h := sha1.Sum([]byte(ctx.Stack() + "-" + ctx.Project()))
+		storeName := fmt.Sprintf("pulumi_snowflake_store_%x", h)[:28]
 		store, err := ds.NewStore(ctx, "snowflake-store", &ds.StoreArgs{
-			Name: pulumi.String("pulumi_snowflake_store"),
+			Name: pulumi.String(storeName),
 			Snowflake: (ds.SnowflakeInputsArgs{
 				Uris:          pulumi.String(uris),
 				AccountId:     pulumi.String(account),
