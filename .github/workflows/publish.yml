@@ -140,21 +140,16 @@ jobs:
         with:
           registry-url: https://registry.npmjs.org
 
-      - name: Download all SDK artifacts
+      - name: Remove checked-out sdk/go before extracting fresh Go SDK artifact
+        if: inputs.skipGoSdk == false
+        run: rm -rf sdk/go
+
+      - name: Download Go SDK artifact
+        if: inputs.skipGoSdk == false
         uses: actions/download-artifact@v4
         with:
-          pattern: sdk-*
-          path: sdk-download/
-          merge-multiple: false
-
-      - name: Reconstruct sdk/ directory layout
-        run: |
-          mkdir -p sdk
-          for lang in nodejs python dotnet go java; do
-            if [ -d "sdk-download/sdk-${lang}" ]; then
-              cp -r "sdk-download/sdk-${lang}" "sdk/${lang}"
-            fi
-          done
+          name: sdk-go
+          path: sdk/go/
 
       # Exchange the GitHub OIDC token for a short-lived NuGet API key (valid 1 hour).
       # No NUGET_API_TOKEN secret needed — Trusted Publishing is configured on nuget.org:
