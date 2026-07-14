@@ -178,17 +178,21 @@ jobs:
           # PUBLISH_REPO_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           # PUBLISH_REPO_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
 
+      # go.mod for this SDK is generated (see Makefile: `go mod init
+      # $(PROJECT)/sdk/go/pulumi-$(PACK)`) at sdk/go/pulumi-deltastream, not at
+      # the sdk/ root. publish-go-sdk-action tags/validates the module using
+      # exactly `{repository}/{path}`, so source and path must point directly
+      # at the directory containing go.mod for `go get` to resolve correctly.
       - name: Publish Go SDK
         if: inputs.skipGoSdk == false
         uses: pulumi/publish-go-sdk-action@v1
         with:
           repository: ${{ github.repository }}
           base-ref: ${{ github.sha }}
-          source: sdk
-          path: sdk
+          source: sdk/go/pulumi-deltastream
+          path: sdk/go/pulumi-deltastream
           version: ${{ inputs.version }}
           additive: false
           files: |
-            go.*
-            go/**
+            **
             !*.tar.gz
