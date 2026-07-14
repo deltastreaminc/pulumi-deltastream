@@ -1,6 +1,6 @@
 {
   "resource": true,
   "name": "deltastream",
-  "version": "1.0.0-alpha.0+dev",
+  "version": "1.0.0-rc.5",
   "server": "github://api.github.com/deltastreaminc"
 }

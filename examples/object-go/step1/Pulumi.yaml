@@ -1,3 +1,0 @@
-name: object-go-step1
-runtime: go
-description: Object example step1 creating stream with Kafka IAM store
