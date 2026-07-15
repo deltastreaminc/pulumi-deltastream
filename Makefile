@@ -202,10 +202,16 @@ generate_dotnet: .make/generate_dotnet
 	# namespace/filename, not from language.csharp.packageName above, so pin
 	# it explicitly here to avoid publishing under the reserved "Pulumi.*"
 	# NuGet ID prefix (owned by pulumi-bot).
-	@csproj=$$(find sdk/dotnet -maxdepth 1 -name '*.csproj'); \
-		grep -q '<PackageId>' "$$csproj" || \
-		sed -i.bak 's#<GeneratePackageOnBuild>true</GeneratePackageOnBuild>#<GeneratePackageOnBuild>true</GeneratePackageOnBuild>\n    <PackageId>DeltaStream.Pulumi</PackageId>#' "$$csproj" && \
-		rm -f "$$csproj.bak"
+	@count=$$(find sdk/dotnet -maxdepth 1 -name '*.csproj' | wc -l | tr -d ' '); \
+		if [ "$$count" -ne 1 ]; then \
+			echo "generate_dotnet: expected exactly one .csproj in sdk/dotnet, found $$count" >&2; \
+			exit 1; \
+		fi; \
+		csproj=$$(find sdk/dotnet -maxdepth 1 -name '*.csproj'); \
+		if ! grep -q '<PackageId>' "$$csproj"; then \
+			awk '{ print } /<GeneratePackageOnBuild>true<\/GeneratePackageOnBuild>/ && !done { print "    <PackageId>DeltaStream.Pulumi</PackageId>"; done=1 }' \
+				"$$csproj" > "$$csproj.tmp" && mv "$$csproj.tmp" "$$csproj"; \
+		fi
 	@touch $@
 
 build_dotnet: .make/build_dotnet
