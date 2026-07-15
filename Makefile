@@ -90,8 +90,7 @@ schema: .make/schema
 		'| .language.python.packageName = "pulumi_deltastream"' \
 		'| .language.python.respectSchemaVersion = true' \
 		'| .language.python.pyproject.enabled = true' \
-		'| .language.csharp.packageName = "Pulumi.DeltaStream"' \
-		'| .language.csharp.rootNamespace = "Pulumi"' \
+		'| .language.csharp.packageName = "DeltaStream.Pulumi"' \
 		'| .language.csharp.respectSchemaVersion = true' \
 		'| .language.java.basePackage = "io.deltastream.pulumi.deltastream"' \
 		'| .language.java.buildFiles = "gradle"' \
@@ -199,6 +198,14 @@ generate_dotnet: .make/generate_dotnet
 	echo "$(PROVIDER_VERSION)" > sdk/dotnet/version.txt
 	printf "module fake_dotnet_module // Exclude from Go tools\n\ngo 1.21\n" \
 		> sdk/dotnet/go.mod
+	# The codegen'd .csproj derives its NuGet PackageId from the C# root
+	# namespace/filename, not from language.csharp.packageName above, so pin
+	# it explicitly here to avoid publishing under the reserved "Pulumi.*"
+	# NuGet ID prefix (owned by pulumi-bot).
+	@csproj=$$(find sdk/dotnet -maxdepth 1 -name '*.csproj'); \
+		grep -q '<PackageId>' "$$csproj" || \
+		sed -i.bak 's#<GeneratePackageOnBuild>true</GeneratePackageOnBuild>#<GeneratePackageOnBuild>true</GeneratePackageOnBuild>\n    <PackageId>DeltaStream.Pulumi</PackageId>#' "$$csproj" && \
+		rm -f "$$csproj.bak"
 	@touch $@
 
 build_dotnet: .make/build_dotnet
