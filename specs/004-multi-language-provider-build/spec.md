@@ -55,7 +55,7 @@ A maintainer pushes a version tag (e.g., `v1.2.0`). The release pipeline cross-c
 **Acceptance Scenarios**:
 
 1. **Given** a maintainer pushes a `v*.*.*` tag, **When** the release workflow completes, **Then** a GitHub Release exists containing provider tarballs for linux-amd64, linux-arm64, darwin-amd64, and darwin-arm64, plus a SHA256 checksums file and `schema.json`.
-2. **Given** a successful release build, **When** the publish step runs, **Then** `@deltastream/pulumi-deltastream` is available on npm, `pulumi-deltastream` is available on PyPI, `Pulumi.DeltaStream` is available on NuGet, and the Go SDK is tagged in the repository.
+2. **Given** a successful release build, **When** the publish step runs, **Then** `@deltastream/pulumi-deltastream` is available on npm, `pulumi-deltastream` is available on PyPI, `DeltaStream.Pulumi` is available on NuGet, and the Go SDK is tagged in the repository.
 3. **Given** a version tag containing a hyphen (e.g., `v1.2.0-alpha.1`), **When** the release workflow runs, **Then** it is treated as a prerelease and the GitHub Release is created as a draft rather than a public release.
 4. **Given** a completed release publication, **When** the verify job runs, **Then** a smoke test successfully installs and imports the Node.js SDK from npm using the published version.
 
@@ -101,7 +101,7 @@ The DeltaStream provider is listed in the public Pulumi Registry with a complete
 - **FR-011**: The `prerequisites.yml` workflow MUST run `make test_provider` (unit tests) before SDK generation and post a schema diff comment on pull requests.
 - **FR-012**: The `publish.yml` workflow MUST publish all five language SDKs using `pulumi/pulumi-package-publisher` with `sdk: all`, publish the Go SDK via `pulumi/publish-go-sdk-action`, and create a GitHub Release with provider tarballs, checksums, and `schema.json`.
 - **FR-013**: The `verify-release.yml` workflow MUST run smoke tests for the Node.js and Python SDKs after publication to confirm the published packages are importable.
-- **FR-014**: The `schema.json` MUST include complete language metadata for all five languages: nodejs (`packageName`), python (`pyproject`), dotnet (`packageName`, `rootNamespace`), go (`importBasePath`), and java (`basePackage`).
+- **FR-014**: The `schema.json` MUST include complete language metadata for all five languages: nodejs (`packageName`), python (`pyproject`), dotnet (`packageName`), go (`importBasePath`), and java (`basePackage`).
 - **FR-015**: Fork PRs MUST trigger the build and lint jobs but NOT the integration test job (which requires secrets).
 - **FR-016**: The `.gitignore` MUST NOT exclude `.config/` (required for mise configuration) and MUST exclude generated SDK directories `sdk/dotnet/`, `sdk/java/`.
 - **FR-017**: The repository MUST contain `docs/_index.md` and `docs/installation-configuration.md` suitable for submission to the Pulumi Registry.
@@ -122,7 +122,7 @@ The DeltaStream provider is listed in the public Pulumi Registry with a complete
 - **SC-001**: A developer with only Docker and VS Code installed can go from fresh clone to a passing `make build` (all five language SDKs) in under 15 minutes on a standard laptop.
 - **SC-002**: A pull request CI run completes all five language SDK builds in parallel and reports results in under 20 minutes.
 - **SC-003**: A full release pipeline (build all platforms + publish all SDKs) completes end-to-end in under 30 minutes from tag push to GitHub Release creation.
-- **SC-004**: All five language SDKs (`@deltastream/pulumi-deltastream` on npm, `pulumi-deltastream` on PyPI, `Pulumi.DeltaStream` on NuGet, Go module, Java on Maven) are installable by users using standard package manager commands within 10 minutes of a release completing.
+- **SC-004**: All five language SDKs (`@deltastream/pulumi-deltastream` on npm, `pulumi-deltastream` on PyPI, `DeltaStream.Pulumi` on NuGet, Go module, Java on Maven) are installable by users using standard package manager commands within 10 minutes of a release completing.
 - **SC-005**: The provider appears in the Pulumi Registry at `pulumi.com/registry/packages/deltastream` following a one-time registry PR submission.
 - **SC-006**: CI tool setup time is reduced by eliminating per-language setup actions — all tools installed via a single mise step with cache restoration.
 
