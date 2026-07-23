@@ -1,5 +1,0 @@
-{
-  "dependencies": {
-    "@deltastream/pulumi-deltastream": "^0.2.15"
-  }
-}

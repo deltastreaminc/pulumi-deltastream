@@ -1,3 +1,0 @@
-name: simple-typescript-example
-runtime: nodejs
-description: Simple TypeScript example using the DeltaStream Pulumi provider
