@@ -18,6 +18,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -25,6 +26,8 @@ import (
 	p "github.com/pulumi/pulumi-go-provider"
 	"github.com/pulumi/pulumi-go-provider/infer"
 	"k8s.io/utils/ptr"
+
+	godeltastream "github.com/deltastreaminc/go-deltastream"
 )
 
 // KafkaInputs holds Kafka-specific properties for a store (split from store.go).
@@ -123,8 +126,8 @@ func storeKafkaCreate(ctx context.Context, conn *sql.Conn, input *StoreArgs) err
 		if err != nil {
 			return fmt.Errorf("failed reading tlsCaCertFile: %w", err)
 		}
-		esc := strings.ReplaceAll(string(content), "'", "''")
-		params["tls.ca_cert"] = fmt.Sprintf("'%s'", esc)
+		params["tls.ca_cert_file"] = "'@cacert'"
+		ctx = godeltastream.WithAttachment(ctx, "cacert", io.NopCloser(strings.NewReader(string(content))))
 	}
 	pairs := make([]string, 0, len(params))
 	for kkey, v := range params {
@@ -229,14 +232,14 @@ func storeKafkaUpdate(ctx context.Context, req infer.UpdateRequest[StoreArgs, St
 	}
 	if (curr.TlsCaCertFile == nil) != (old.TlsCaCertFile == nil) || (curr.TlsCaCertFile != nil && old.TlsCaCertFile != nil && *curr.TlsCaCertFile != *old.TlsCaCertFile) {
 		if curr.TlsCaCertFile == nil {
-			changes["tls.ca_cert"] = "NULL"
+			changes["tls.ca_cert_file"] = "NULL"
 		} else if curr.TlsDisabled == nil || !*curr.TlsDisabled {
 			content, err := os.ReadFile(*curr.TlsCaCertFile)
 			if err != nil {
 				return infer.UpdateResponse[StoreState]{}, fmt.Errorf("failed reading tlsCaCertFile: %w", err)
 			}
-			esc := strings.ReplaceAll(string(content), "'", "''")
-			changes["tls.ca_cert"] = fmt.Sprintf("'%s'", esc)
+			changes["tls.ca_cert_file"] = "'@cacert'"
+			ctx = godeltastream.WithAttachment(ctx, "cacert", io.NopCloser(strings.NewReader(string(content))))
 		}
 	}
 	if len(changes) == 0 {
