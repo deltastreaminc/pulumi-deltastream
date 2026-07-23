@@ -94,6 +94,62 @@ func TestKafkaStoreUpdateGo(t *testing.T) {
 	integration.ProgramTest(t, &opts)
 }
 
+func TestKafkaStoreWithCaCertGo(t *testing.T) {
+	apiKey, server := getCredentials(t)
+
+	data, err := os.ReadFile("credentials.yaml")
+	require.NoError(t, err)
+
+	var creds KafkaCreds
+	err = yaml.Unmarshal(data, &creds)
+	require.NoError(t, err)
+
+	if creds.KafkaWithCaUris == "" || creds.KafkaWithCaScramUser == "" || creds.KafkaWithCaScramPass == "" || creds.KafkaWithCaCert == "" {
+		t.Skip("Skipping Kafka SASL+CA-cert store test: missing required credentials")
+	}
+	base := getGoBaseOptions(t)
+	step3Dir := filepath.Join(getCwd(t), "kafka-store-go", "step3")
+	step4Dir := filepath.Join(getCwd(t), "kafka-store-go", "step4")
+	opts := base.With(integration.ProgramTestOptions{
+		Dir:                      step3Dir,
+		DestroyOnCleanup:         true,
+		AllowEmptyPreviewChanges: true,
+		AllowEmptyUpdateChanges:  true,
+		Env: []string{
+			"DELTASTREAM_API_KEY=" + apiKey,
+			"DELTASTREAM_SERVER=" + server,
+			"KAFKA_WITH_CA_URIS=" + creds.KafkaWithCaUris,
+			"KAFKA_WITH_CA_SCRAM_USER=" + creds.KafkaWithCaScramUser,
+			"KAFKA_WITH_CA_SCRAM_PASS=" + creds.KafkaWithCaScramPass,
+			"KAFKA_WITH_CA_CERT=" + creds.KafkaWithCaCert,
+		},
+		EditDirs: []integration.EditDir{{
+			Dir:      step4Dir,
+			Additive: true,
+			ExtraRuntimeValidation: func(t *testing.T, stackInfo integration.RuntimeValidationStackInfo) {
+				// After update (CA cert re-supplied via a different local file path),
+				// the store should still be healthy and report the same auth mode.
+				if mode, ok := stackInfo.Outputs["store_auth_mode"]; ok {
+					require.Equal(t, "SHA512_CA", mode.(string))
+				}
+				if st, ok := stackInfo.Outputs["store_state"]; ok {
+					require.NotEmpty(t, st)
+				}
+			},
+		}},
+		ExtraRuntimeValidation: func(t *testing.T, stackInfo integration.RuntimeValidationStackInfo) {
+			// Initial creation with SASL SCRAM + TLS CA cert should succeed.
+			if mode, ok := stackInfo.Outputs["store_auth_mode"]; ok {
+				require.Equal(t, "SHA512_CA", mode.(string))
+			}
+			if st, ok := stackInfo.Outputs["store_state"]; ok {
+				require.NotEmpty(t, st)
+			}
+		},
+	})
+	integration.ProgramTest(t, &opts)
+}
+
 func TestSnowflakeStoreUpdateGo(t *testing.T) {
 	apiKey, server := getCredentials(t)
 	data, err := os.ReadFile("credentials.yaml")

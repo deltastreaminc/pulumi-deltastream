@@ -18,6 +18,12 @@ type KafkaCreds struct {
 	IamKafkaUris  string `yaml:"iamKafkaUris"`
 	MskRole       string `yaml:"mskRole"`
 	MskRegion     string `yaml:"mskRegion"`
+
+	// SASL + TLS CA certificate store credentials.
+	KafkaWithCaUris      string `yaml:"kafkaWithCaUris"`
+	KafkaWithCaScramUser string `yaml:"kafkaWithCaScramUser"`
+	KafkaWithCaScramPass string `yaml:"kafkaWithCaScramPass"`
+	KafkaWithCaCert      string `yaml:"kafkaWithCaCert"`
 }
 
 type SnowflakeCreds struct {
