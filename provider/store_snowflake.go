@@ -151,7 +151,7 @@ func storeSnowflakeUpdate(ctx context.Context, req infer.UpdateRequest[StoreArgs
 			return infer.UpdateResponse[StoreState]{}, fmt.Errorf("invalid snowflake clientKey base64: %w", err)
 		}
 		changes["snowflake.client.key_file"] = "'@keyfile'"
-		ctx = godeltastream.WithAttachment(ctx, "keyfile", io.NopCloser(strings.NewReader(string(decoded))))
+		ctx = godeltastream.WithAttachment(ctx, "@keyfile", io.NopCloser(strings.NewReader(string(decoded))))
 	}
 	if len(changes) == 0 {
 		return infer.UpdateResponse[StoreState]{}, nil

@@ -127,7 +127,7 @@ func storeKafkaCreate(ctx context.Context, conn *sql.Conn, input *StoreArgs) err
 			return fmt.Errorf("failed reading tlsCaCertFile: %w", err)
 		}
 		params["tls.ca_cert_file"] = "'@cacert'"
-		ctx = godeltastream.WithAttachment(ctx, "cacert", io.NopCloser(strings.NewReader(string(content))))
+		ctx = godeltastream.WithAttachment(ctx, "@cacert", io.NopCloser(strings.NewReader(string(content))))
 	}
 	pairs := make([]string, 0, len(params))
 	for kkey, v := range params {
@@ -239,7 +239,7 @@ func storeKafkaUpdate(ctx context.Context, req infer.UpdateRequest[StoreArgs, St
 				return infer.UpdateResponse[StoreState]{}, fmt.Errorf("failed reading tlsCaCertFile: %w", err)
 			}
 			changes["tls.ca_cert_file"] = "'@cacert'"
-			ctx = godeltastream.WithAttachment(ctx, "cacert", io.NopCloser(strings.NewReader(string(content))))
+			ctx = godeltastream.WithAttachment(ctx, "@cacert", io.NopCloser(strings.NewReader(string(content))))
 		}
 	}
 	if len(changes) == 0 {
