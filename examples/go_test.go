@@ -124,11 +124,8 @@ func TestKafkaStoreWithCaCertGo(t *testing.T) {
 			"KAFKA_WITH_CA_CERT=" + creds.KafkaWithCaCert,
 		},
 		EditDirs: []integration.EditDir{{
-			Dir: step4Dir,
-			// Non-additive: preserves the original Pulumi.yaml (and its injected
-			// LocalProviders plugin path override) instead of overwriting it with
-			// step4's plain copy, which would break local provider plugin resolution.
-			Additive: false,
+			Dir:      step4Dir,
+			Additive: true,
 			ExtraRuntimeValidation: func(t *testing.T, stackInfo integration.RuntimeValidationStackInfo) {
 				// After update (CA cert re-supplied via a different local file path),
 				// the store should still be healthy and report the same auth mode.
