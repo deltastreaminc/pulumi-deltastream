@@ -1,3 +1,0 @@
-name: query-ts
-runtime: nodejs
-description: Query example copying from a stream into a changelog
