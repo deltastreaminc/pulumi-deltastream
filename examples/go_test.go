@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/pulumi/pulumi/pkg/v3/testing/integration"
 	"github.com/stretchr/testify/require"
@@ -135,6 +136,12 @@ func TestKafkaStoreWithCaCertGo(t *testing.T) {
 				if st, ok := stackInfo.Outputs["store_state"]; ok {
 					require.NotEmpty(t, st)
 				}
+				// Give the backend a moment to settle after the UPDATE STORE
+				// before ProgramTest proceeds to destroy the stack. Destroying
+				// immediately after an update has occasionally raced with the
+				// backend and surfaced a transient "internal error" during
+				// store deletion.
+				time.Sleep(10 * time.Second)
 			},
 		}},
 		ExtraRuntimeValidation: func(t *testing.T, stackInfo integration.RuntimeValidationStackInfo) {

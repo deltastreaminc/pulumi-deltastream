@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httputil"
+	"os"
 	"strings"
 	"time"
 
@@ -49,8 +51,52 @@ func buildHTTPClient(insecureSkipVerify bool, sessionID *string) *http.Client {
 	}
 
 	// Add a simple UA with optional session id.
-	rt := roundTripperWithUA{r: tr, sessionID: sessionID}
+	var rt http.RoundTripper = roundTripperWithUA{r: tr, sessionID: sessionID}
+	if logPath := os.Getenv("DELTASTREAM_PULUMI_HTTP_DEBUG"); logPath != "" {
+		rt = &debugTransport{r: rt, logPath: logPath}
+	}
 	return &http.Client{Transport: rt}
+}
+
+// debugTransport dumps full raw HTTP requests/responses (headers + body) to a
+// file, mirroring the CLI's debugTransport (deltastreamv2/client/lib/http-client.go)
+// so we can inspect the exact bytes submitted by the Pulumi provider.
+// Enabled only when DELTASTREAM_PULUMI_HTTP_DEBUG is set to a writable file path.
+type debugTransport struct {
+	r       http.RoundTripper
+	logPath string
+}
+
+func (d *debugTransport) RoundTrip(h *http.Request) (*http.Response, error) {
+	// The dumped request/response may contain secrets (e.g. API keys, auth
+	// tokens), so restrict the log file to owner-only access.
+	f, ferr := os.OpenFile(d.logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	if ferr != nil {
+		// If we can't open the log file, skip the (potentially expensive)
+		// dump/RoundTrip logging entirely and just forward the request.
+		return d.r.RoundTrip(h)
+	}
+	defer f.Close() //nolint:errcheck
+
+	logf := func(format string, args ...interface{}) {
+		_, _ = fmt.Fprintf(f, format, args...)
+	}
+
+	dump, _ := httputil.DumpRequestOut(h, true)
+	logf("===== REQUEST %s =====\n%s\n", time.Now().Format(time.RFC3339Nano), string(dump))
+
+	resp, err := d.r.RoundTrip(h)
+	if err != nil {
+		logf("===== ROUNDTRIP ERROR =====\n%v\n\n", err)
+		return resp, err
+	}
+	if resp != nil {
+		dumpResp, _ := httputil.DumpResponse(resp, true)
+		logf("===== RESPONSE %s =====\n%s\n\n", time.Now().Format(time.RFC3339Nano), string(dumpResp))
+	} else {
+		logf("===== RESPONSE is nil =====\n\n")
+	}
+	return resp, err
 }
 
 type roundTripperWithUA struct {
@@ -139,4 +185,20 @@ func quoteIdent(in string) string {
 
 func quoteString(in string) string {
 	return fmt.Sprintf("'%s'", strings.ReplaceAll(in, "'", "''"))
+}
+
+// setStringIfPresent sets changes[key] to a quoted SQL string literal derived
+// from valPtr, but only when valPtr is non-nil and non-empty. It is a no-op
+// otherwise, leaving key absent from changes rather than sending NULL. This
+// is intended for STRING_VALUE-typed UPDATE STORE parameters that do not
+// accept a bare NULL literal (e.g. kafka.sasl.username, kafka.sasl.password,
+// kafka.msk.iam_role_arn, kafka.msk.aws_region): when the field doesn't
+// apply to the current configuration, omitting it lets the backend surface
+// its own "required parameter" validation error if the field actually is
+// needed.
+func setStringIfPresent(changes map[string]string, key string, valPtr *string) {
+	if valPtr == nil || *valPtr == "" {
+		return
+	}
+	changes[key] = quoteString(*valPtr)
 }
