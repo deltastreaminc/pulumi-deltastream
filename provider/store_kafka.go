@@ -100,27 +100,19 @@ func storeKafkaCreate(ctx context.Context, conn *sql.Conn, input *StoreArgs) err
 			params["tls.verify_server_hostname"] = "FALSE"
 		}
 	}
-	if k.TlsVerifyServerHostname != nil && (k.TlsDisabled == nil || !*k.TlsDisabled) {
-		params["tls.verify_server_hostname"] = boolToSql(*k.TlsVerifyServerHostname)
+	if k.TlsDisabled == nil || !*k.TlsDisabled {
+		// Default to TRUE (the secure default) when unset.
+		verifyServerHostname := k.TlsVerifyServerHostname == nil || *k.TlsVerifyServerHostname
+		params["tls.verify_server_hostname"] = boolToSql(verifyServerHostname)
 	}
 	if strings.EqualFold(k.SaslHashFunction, "AWS_MSK_IAM") {
-		if k.MskIamRoleArn != nil {
-			params["kafka.msk.iam_role_arn"] = fmt.Sprintf("'%s'", *k.MskIamRoleArn)
-		}
-		if k.MskAwsRegion != nil {
-			params["kafka.msk.aws_region"] = fmt.Sprintf("'%s'", *k.MskAwsRegion)
-		}
+		setStringIfPresent(params, "kafka.msk.iam_role_arn", k.MskIamRoleArn)
+		setStringIfPresent(params, "kafka.msk.aws_region", k.MskAwsRegion)
 	} else if strings.EqualFold(k.SaslHashFunction, "PLAIN") || strings.EqualFold(k.SaslHashFunction, "SHA512") || strings.EqualFold(k.SaslHashFunction, "SHA256") {
-		if k.SaslUsername != nil {
-			params["kafka.sasl.username"] = fmt.Sprintf("'%s'", *k.SaslUsername)
-		}
-		if k.SaslPassword != nil {
-			params["kafka.sasl.password"] = fmt.Sprintf("'%s'", *k.SaslPassword)
-		}
+		setStringIfPresent(params, "kafka.sasl.username", k.SaslUsername)
+		setStringIfPresent(params, "kafka.sasl.password", k.SaslPassword)
 	}
-	if k.SchemaRegistryName != nil {
-		params["kafka.schema_registry_name"] = fmt.Sprintf("'%s'", *k.SchemaRegistryName)
-	}
+	setStringIfPresent(params, "kafka.schema_registry_name", k.SchemaRegistryName)
 	if k.TlsCaCertFile != nil && (k.TlsDisabled == nil || !*k.TlsDisabled) {
 		content, err := os.ReadFile(*k.TlsCaCertFile)
 		if err != nil {
@@ -186,54 +178,74 @@ func storeKafkaUpdate(ctx context.Context, req infer.UpdateRequest[StoreArgs, St
 		esc := strings.ReplaceAll(curr.Uris, "'", "''")
 		changes["uris"] = fmt.Sprintf("'%s'", esc)
 	}
-	if curr.SaslHashFunction != old.SaslHashFunction {
-		esc := strings.ReplaceAll(curr.SaslHashFunction, "'", "''")
-		changes["kafka.sasl.hash_function"] = fmt.Sprintf("'%s'", esc)
+	// The backend re-verifies the store's connectivity/auth on every UPDATE
+	// STORE, and it validates the SASL/TLS parameters as a complete group
+	// rather than as an independent diff. If any auth-related field is sent
+	// without its siblings (e.g. changing only the CA cert while leaving the
+	// SASL credentials out) the verification fails with errors such as
+	// "kafka.sasl.password, and kafka.sasl.username are required".
+	//
+	// To avoid that, always re-send the full set of credential parameters
+	// that are relevant for the current hash function, plus the TLS/CA
+	// parameters, regardless of whether they individually changed. The exact
+	// set of required parameters depends on kafka.sasl.hash_function (see the
+	// UPDATE STORE reference docs):
+	//
+	//   AWS_MSK_IAM        -> kafka.msk.iam_role_arn, kafka.msk.aws_region
+	//   PLAIN/SHA256/SHA512 -> kafka.sasl.username, kafka.sasl.password
+	//   NONE               -> (no credentials)
+	//
+	// kafka.sasl.hash_function is a bareword enum token (not a quoted string
+	// literal), matching storeKafkaCreate's handling.
+	changes["kafka.sasl.hash_function"] = curr.SaslHashFunction
+
+	// kafka.msk.iam_role_arn, kafka.msk.aws_region, kafka.sasl.username and
+	// kafka.sasl.password are all STRING_VALUE-typed parameters in the
+	// UPDATE STORE grammar: they do not accept a bare NULL literal. Instead
+	// of forcing them to NULL when they don't apply to the current auth
+	// mode, simply omit them from the WITH (...) clause via
+	// setStringIfPresent (see conn.go).
+	isMSK := strings.EqualFold(curr.SaslHashFunction, "AWS_MSK_IAM")
+	isSASL := strings.EqualFold(curr.SaslHashFunction, "PLAIN") ||
+		strings.EqualFold(curr.SaslHashFunction, "SHA256") ||
+		strings.EqualFold(curr.SaslHashFunction, "SHA512")
+	if isMSK {
+		// MSK IAM auth: role ARN + region are required; SASL creds don't apply.
+		setStringIfPresent(changes, "kafka.msk.iam_role_arn", curr.MskIamRoleArn)
+		setStringIfPresent(changes, "kafka.msk.aws_region", curr.MskAwsRegion)
+	} else if isSASL {
+		// SCRAM/PLAIN auth: username + password are required; MSK params don't apply.
+		setStringIfPresent(changes, "kafka.sasl.username", curr.SaslUsername)
+		setStringIfPresent(changes, "kafka.sasl.password", curr.SaslPassword)
 	}
-	isMSKNew := strings.EqualFold(curr.SaslHashFunction, "AWS_MSK_IAM")
-	isMSKOld := strings.EqualFold(old.SaslHashFunction, "AWS_MSK_IAM")
-	if isMSKNew {
-		if !isMSKOld {
-			if old.SaslUsername != nil {
-				changes["kafka.sasl.username"] = "NULL"
-			}
-			if old.SaslPassword != nil {
-				changes["kafka.sasl.password"] = "NULL"
-			}
-		}
-		setIfChanged("kafka.msk.iam_role_arn", curr.MskIamRoleArn, old.MskIamRoleArn)
-		setIfChanged("kafka.msk.aws_region", curr.MskAwsRegion, old.MskAwsRegion)
-	} else {
-		if isMSKOld {
-			if old.MskIamRoleArn != nil {
-				changes["kafka.msk.iam_role_arn"] = "NULL"
-			}
-			if old.MskAwsRegion != nil {
-				changes["kafka.msk.aws_region"] = "NULL"
-			}
-		}
-		setIfChanged("kafka.sasl.username", curr.SaslUsername, old.SaslUsername)
-		setIfChanged("kafka.sasl.password", curr.SaslPassword, old.SaslPassword)
-	}
+	// NONE: no SASL credentials or MSK params apply; nothing to set.
+
 	setIfChanged("kafka.schema_registry_name", curr.SchemaRegistryName, old.SchemaRegistryName)
-	if (curr.TlsDisabled == nil) != (old.TlsDisabled == nil) || (curr.TlsDisabled != nil && old.TlsDisabled != nil && *curr.TlsDisabled != *old.TlsDisabled) {
-		if curr.TlsDisabled == nil {
-			changes["tls.disabled"] = "NULL"
-		} else {
-			changes["tls.disabled"] = boolToSql(*curr.TlsDisabled)
-		}
-	}
-	if (curr.TlsVerifyServerHostname == nil) != (old.TlsVerifyServerHostname == nil) || (curr.TlsVerifyServerHostname != nil && old.TlsVerifyServerHostname != nil && *curr.TlsVerifyServerHostname != *old.TlsVerifyServerHostname) {
-		if curr.TlsVerifyServerHostname == nil {
-			changes["tls.verify_server_hostname"] = "NULL"
-		} else if curr.TlsDisabled == nil || !*curr.TlsDisabled {
-			changes["tls.verify_server_hostname"] = boolToSql(*curr.TlsVerifyServerHostname)
-		}
-	}
-	if (curr.TlsCaCertFile == nil) != (old.TlsCaCertFile == nil) || (curr.TlsCaCertFile != nil && old.TlsCaCertFile != nil && *curr.TlsCaCertFile != *old.TlsCaCertFile) {
-		if curr.TlsCaCertFile == nil {
-			changes["tls.ca_cert_file"] = "NULL"
-		} else if curr.TlsDisabled == nil || !*curr.TlsDisabled {
+
+	// Always re-send the TLS parameters so the backend re-validates the
+	// connection with a complete, self-consistent TLS configuration. The
+	// cert-file parameters (tls.ca_cert_file, and likewise
+	// tls.client.cert_file / tls.client.key_file) are optional and are only
+	// sent when the user provides them.
+	// tls.disabled and tls.verify_server_hostname are boolean-typed
+	// parameters in the UPDATE STORE grammar: they only accept the bareword
+	// literals TRUE/FALSE, not a bare NULL. When unset, tls.disabled
+	// defaults to FALSE (its implicit default) while
+	// tls.verify_server_hostname defaults to TRUE (the secure default)
+	// instead of sending an invalid NULL literal.
+	tlsDisabled := curr.TlsDisabled != nil && *curr.TlsDisabled
+	changes["tls.disabled"] = boolToSql(tlsDisabled)
+	if tlsDisabled {
+		// When TLS is disabled the verify/CA parameters are meaningless.
+		changes["tls.verify_server_hostname"] = "FALSE"
+	} else {
+		verifyServerHostname := curr.TlsVerifyServerHostname == nil || *curr.TlsVerifyServerHostname
+		changes["tls.verify_server_hostname"] = boolToSql(verifyServerHostname)
+		// tls.ca_cert_file (like tls.client.cert_file / tls.client.key_file) is
+		// optional and should only be sent when the user actually provides a
+		// path. Never force it to NULL, otherwise an update that touches other
+		// fields would clear a CA cert the store already relies on.
+		if curr.TlsCaCertFile != nil && *curr.TlsCaCertFile != "" {
 			content, err := os.ReadFile(*curr.TlsCaCertFile)
 			if err != nil {
 				return infer.UpdateResponse[StoreState]{}, fmt.Errorf("failed reading tlsCaCertFile: %w", err)

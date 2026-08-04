@@ -147,7 +147,9 @@ func storePostgresUpdate(ctx context.Context, req infer.UpdateRequest[StoreArgs,
 	curV, oldV := req.Inputs.Postgres.TlsVerifyServerHostname, req.State.Postgres.TlsVerifyServerHostname
 	if (curV == nil) != (oldV == nil) || (curV != nil && oldV != nil && *curV != *oldV) {
 		if curV == nil {
-			changes["tls.verify_server_hostname"] = "NULL"
+			// tls.verify_server_hostname is boolean-typed and doesn't accept
+			// a bare NULL literal; default to FALSE when unset.
+			changes["tls.verify_server_hostname"] = "FALSE"
 		} else if req.Inputs.Postgres.TlsDisabled == nil || (req.Inputs.Postgres.TlsDisabled != nil && !*req.Inputs.Postgres.TlsDisabled) {
 			if *curV {
 				changes["tls.verify_server_hostname"] = "TRUE"
