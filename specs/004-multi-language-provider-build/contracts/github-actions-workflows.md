@@ -146,7 +146,7 @@ Runs `make lint` against `provider/` Go code. Fails if any golangci-lint violati
 1. Creates GitHub Release at `v<version>` with tarballs, checksums, schema
 2. Publishes npm package `@deltastream/pulumi-deltastream@<version>`
 3. Publishes PyPI package `pulumi-deltastream==<version>`
-4. Publishes NuGet package `Pulumi.DeltaStream <version>`
+4. Publishes NuGet package `DeltaStream.Pulumi <version>`
 5. Tags Go SDK commit via `pulumi/publish-go-sdk-action`
 
 ---

@@ -25,7 +25,7 @@ description: "Tasks for feature 004-multi-language-provider-build"
 
 **Status**: ✅ Already applied during the planning phase. Verify correctness below.
 
-- [x] T001 Verify `make schema` jq pipeline in `Makefile` (line `.make/schema` target) injects all 13 metadata fields: `displayName`, `description`, `publisher`, `logoUrl`, `keywords`, `language.go.*`, `language.nodejs.packageName`, `language.python.packageName`, `language.python.pyproject`, `language.csharp.packageName`, `language.csharp.rootNamespace`, `language.java.basePackage`, `language.java.buildFiles`
+- [x] T001 Verify `make schema` jq pipeline in `Makefile` (line `.make/schema` target) injects all 12 metadata fields: `displayName`, `description`, `publisher`, `logoUrl`, `keywords`, `language.go.*`, `language.nodejs.packageName`, `language.python.packageName`, `language.python.pyproject`, `language.csharp.packageName`, `language.java.basePackage`, `language.java.buildFiles`
 - [x] T002 Run `python3 -c "import json; d=json.load(open('schema.json')); assert d.get('publisher') == 'DeltaStream Inc.', f'Missing: {d.get(\"publisher\")}'; print('schema.json metadata OK')"` at repo root to confirm current `schema.json` has the metadata (note: regeneration requires `pulumi` CLI + built provider)
 
 ---
@@ -110,7 +110,7 @@ description: "Tasks for feature 004-multi-language-provider-build"
 - [ ] T032 [US3] Confirm `publish` job creates a draft GitHub Release with all 4 tarballs, checksums file, and `schema.json` attached
 - [ ] T033 [US3] Confirm `publish_sdk` job publishes `@deltastream/pulumi-deltastream@1.0.0-rc.1` to npm: `npm view @deltastream/pulumi-deltastream@1.0.0-rc.1 version`
 - [ ] T034 [US3] Confirm `publish_sdk` job publishes `pulumi-deltastream==1.0.0-rc.1` to PyPI: `pip index versions pulumi-deltastream`
-- [ ] T035 [US3] Confirm `publish_sdk` job publishes `Pulumi.DeltaStream 1.0.0-rc.1` to NuGet via OIDC Trusted Publishing (no API key stored)
+- [ ] T035 [US3] Confirm `publish_sdk` job publishes `DeltaStream.Pulumi 1.0.0-rc.1` to NuGet via OIDC Trusted Publishing (no API key stored)
 - [ ] T036 [US3] Confirm `verify` job smoke tests pass: Node.js `require('@deltastream/pulumi-deltastream')` and Python `import pulumi_deltastream` both succeed
 - [ ] T037 [US3] Confirm Go SDK is tagged by `pulumi/publish-go-sdk-action`: check that a `sdk/v1.0.0-rc.1` tag exists on the repository after the publish job
 

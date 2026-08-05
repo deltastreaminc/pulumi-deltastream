@@ -102,16 +102,30 @@ This research phase consolidates findings from prior analysis sessions on pulumi
 
 ## Decision 7: Schema Metadata for Pulumi Registry
 
-**Decision**: Add `publisher`, `logoUrl`, `keywords`, `description` to `schema.json`. Add complete language blocks for `csharp` (packageName: `Pulumi.DeltaStream`), `java` (basePackage: `io.deltastream.pulumi.deltastream`), and `python` (packageName: `pulumi_deltastream`).
+**Decision**: Add `publisher`, `logoUrl`, `keywords`, `description` to `schema.json`. Add complete language blocks for `csharp` (packageName: `DeltaStream.Pulumi`), `java` (basePackage: `io.deltastream.pulumi.deltastream`), and `python` (packageName: `pulumi_deltastream`).
 
 **Rationale**:
 - Pulumi Registry listing requires these fields per the [publishing guide](https://www.pulumi.com/docs/iac/guides/building-extending/packages/publishing-packages/).
-- The NuGet package name `Pulumi.DeltaStream` follows Pulumi's own convention (e.g., `Pulumi.Aws`, `Pulumi.Azure`).
+- The NuGet package name `DeltaStream.Pulumi` avoids the `Pulumi.*` NuGet ID prefix, which is reserved on nuget.org for the `pulumi-bot` account (used by Pulumi Corp's own providers, e.g. `Pulumi.Aws`, `Pulumi.Azure`). Any new package submitted under a reserved prefix by a non-owning account is rejected by nuget.org with a 409 response; this was discovered when the initial `Pulumi.DeltaStream` package repeatedly failed to publish in CI (see Decision 7a below).
 - The Python package name `pulumi_deltastream` follows PyPI snake_case convention.
 - `keywords` array must include `category/database` and `kind/native` for correct registry classification.
 
 **Alternatives considered**:
-- `DeltaStream.Pulumi` (org-first naming): Rejected in favour of `Pulumi.DeltaStream` to match the established Pulumi ecosystem convention users expect.
+- `Pulumi.DeltaStream` (Pulumi ecosystem naming convention, e.g. `Pulumi.Aws`, `Pulumi.Azure`): Initially chosen to match the established convention, but rejected after discovering that `Pulumi.*` is a reserved NuGet ID prefix owned by `pulumi-bot`; nuget.org rejects any new package submission under this prefix from a different account.
+
+---
+
+## Decision 7a: NuGet Package ID vs. `language.csharp.packageName` schema field
+
+**Decision**: Set `language.csharp.packageName` to `DeltaStream.Pulumi` for documentation/metadata purposes, but explicitly pin the actual NuGet `PackageId` in the generated `.csproj` via a `Makefile` post-processing step after `pulumi package gen-sdk --language dotnet` runs.
+
+**Rationale**:
+- Testing with `pulumi package gen-sdk` locally showed that the codegen's `language.csharp.packageName` schema field does **not** control the published NuGet package ID. The actual ID is derived from the generated `.csproj` filename, which in turn is derived from `language.csharp.rootNamespace` + the capitalized schema/module name (`Deltastream`) — always appending the module suffix, with no schema-only way to produce a clean two-segment name like `DeltaStream.Pulumi`.
+- The robust fix is to explicitly set `<PackageId>DeltaStream.Pulumi</PackageId>` in the `.csproj` after generation, which is the standard MSBuild/NuGet mechanism for pinning a package ID independent of assembly name/namespace.
+- `language.csharp.rootNamespace` is left unset (default), so the C# namespace remains whatever codegen derives (`Deltastream.Deltastream`) — this is only a source-code namespace and has no effect on the published package ID once `<PackageId>` is pinned.
+
+**Alternatives considered**:
+- Setting only `language.csharp.rootNamespace`/`packageName` in the schema and hoping the codegen'd filename matches: Rejected — verified empirically that no combination of `rootNamespace`/`packageName` produces a clean `DeltaStream.Pulumi.csproj` without the module-name suffix.
 
 ---
 
@@ -143,7 +157,7 @@ All questions from spec were pre-resolved via prior research sessions:
 
 | Question | Resolution |
 |---|---|
-| .NET package name | `Pulumi.DeltaStream` (Pulumi convention) |
+| .NET package name | `DeltaStream.Pulumi` (avoids reserved `Pulumi.*` NuGet ID prefix) |
 | Java in default build | Yes, included in full build pipeline |
 | Devcontainer approach | Explicit Dockerfile (thin, mise-bootstrapped) |
 | Windows binaries | No, Linux + macOS only (consistent with existing matrix) |
