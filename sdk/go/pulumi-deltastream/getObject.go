@@ -40,12 +40,8 @@ type LookupObjectResult struct {
 }
 
 func LookupObjectOutput(ctx *pulumi.Context, args LookupObjectOutputArgs, opts ...pulumi.InvokeOption) LookupObjectResultOutput {
-	return pulumi.ToOutputWithContext(ctx.Context(), args).
-		ApplyT(func(v interface{}) (LookupObjectResultOutput, error) {
-			args := v.(LookupObjectArgs)
-			options := pulumi.InvokeOutputOptions{InvokeOptions: internal.PkgInvokeDefaultOpts(opts)}
-			return ctx.InvokeOutput("deltastream:index:getObject", args, LookupObjectResultOutput{}, options).(LookupObjectResultOutput), nil
-		}).(LookupObjectResultOutput)
+	options := pulumi.InvokeOutputOptions{InvokeOptions: internal.PkgInvokeDefaultOpts(opts)}
+	return ctx.InvokeOutput("deltastream:index:getObject", args, LookupObjectResultOutput{}, options).(LookupObjectResultOutput)
 }
 
 type LookupObjectOutputArgs struct {

@@ -29,12 +29,8 @@ type GetStoresResult struct {
 }
 
 func GetStoresOutput(ctx *pulumi.Context, args GetStoresOutputArgs, opts ...pulumi.InvokeOption) GetStoresResultOutput {
-	return pulumi.ToOutputWithContext(ctx.Context(), args).
-		ApplyT(func(v interface{}) (GetStoresResultOutput, error) {
-			args := v.(GetStoresArgs)
-			options := pulumi.InvokeOutputOptions{InvokeOptions: internal.PkgInvokeDefaultOpts(opts)}
-			return ctx.InvokeOutput("deltastream:index:getStores", args, GetStoresResultOutput{}, options).(GetStoresResultOutput), nil
-		}).(GetStoresResultOutput)
+	options := pulumi.InvokeOutputOptions{InvokeOptions: internal.PkgInvokeDefaultOpts(opts)}
+	return ctx.InvokeOutput("deltastream:index:getStores", args, GetStoresResultOutput{}, options).(GetStoresResultOutput)
 }
 
 type GetStoresOutputArgs struct {

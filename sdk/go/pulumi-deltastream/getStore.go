@@ -35,12 +35,8 @@ type LookupStoreResult struct {
 }
 
 func LookupStoreOutput(ctx *pulumi.Context, args LookupStoreOutputArgs, opts ...pulumi.InvokeOption) LookupStoreResultOutput {
-	return pulumi.ToOutputWithContext(ctx.Context(), args).
-		ApplyT(func(v interface{}) (LookupStoreResultOutput, error) {
-			args := v.(LookupStoreArgs)
-			options := pulumi.InvokeOutputOptions{InvokeOptions: internal.PkgInvokeDefaultOpts(opts)}
-			return ctx.InvokeOutput("deltastream:index:getStore", args, LookupStoreResultOutput{}, options).(LookupStoreResultOutput), nil
-		}).(LookupStoreResultOutput)
+	options := pulumi.InvokeOutputOptions{InvokeOptions: internal.PkgInvokeDefaultOpts(opts)}
+	return ctx.InvokeOutput("deltastream:index:getStore", args, LookupStoreResultOutput{}, options).(LookupStoreResultOutput)
 }
 
 type LookupStoreOutputArgs struct {

@@ -1,3 +1,0 @@
-name: application-go
-runtime: go
-description: Test APPLICATION support with multiple INSERT INTO statements

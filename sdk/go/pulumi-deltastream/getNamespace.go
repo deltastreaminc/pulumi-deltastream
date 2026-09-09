@@ -34,12 +34,8 @@ type LookupNamespaceResult struct {
 }
 
 func LookupNamespaceOutput(ctx *pulumi.Context, args LookupNamespaceOutputArgs, opts ...pulumi.InvokeOption) LookupNamespaceResultOutput {
-	return pulumi.ToOutputWithContext(ctx.Context(), args).
-		ApplyT(func(v interface{}) (LookupNamespaceResultOutput, error) {
-			args := v.(LookupNamespaceArgs)
-			options := pulumi.InvokeOutputOptions{InvokeOptions: internal.PkgInvokeDefaultOpts(opts)}
-			return ctx.InvokeOutput("deltastream:index:getNamespace", args, LookupNamespaceResultOutput{}, options).(LookupNamespaceResultOutput), nil
-		}).(LookupNamespaceResultOutput)
+	options := pulumi.InvokeOutputOptions{InvokeOptions: internal.PkgInvokeDefaultOpts(opts)}
+	return ctx.InvokeOutput("deltastream:index:getNamespace", args, LookupNamespaceResultOutput{}, options).(LookupNamespaceResultOutput)
 }
 
 type LookupNamespaceOutputArgs struct {
