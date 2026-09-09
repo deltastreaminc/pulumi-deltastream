@@ -2,11 +2,11 @@
     "name": "basic",
     "main": "index.ts",
     "devDependencies": {
-        "@types/node": "^18",
-        "typescript": "^5.8.3"
+        "@types/node": "^26.5.0",
+        "typescript": "^6.0.3"
     },
     "dependencies": {
-        "@deltastream/pulumi-deltastream": "1.0.0-alpha.0",
-        "@pulumi/pulumi": "^3.0.0"
+        "@deltastream/pulumi-deltastream": "1.0.2",
+        "@pulumi/pulumi": "^3.261.0"
     }
 }

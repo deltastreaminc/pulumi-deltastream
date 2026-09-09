@@ -138,6 +138,7 @@ jobs:
       - name: Setup Node (for npm auth)
         uses: actions/setup-node@v4
         with:
+          node-version: 26.8.1
           registry-url: https://registry.npmjs.org
 
       - name: Remove checked-out sdk/go before extracting fresh Go SDK artifact

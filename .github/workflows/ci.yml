@@ -34,6 +34,9 @@ jobs:
 
   test:
     needs: [prerequisites, build_sdk]
+    concurrency:
+      group: deltastream-integration-tests
+      cancel-in-progress: false
     # Only run automatically for non-fork PRs (secrets are available).
     # For fork PRs, a maintainer can trigger via workflow_dispatch.
     if: >-
