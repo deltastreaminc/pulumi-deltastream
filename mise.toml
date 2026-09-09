@@ -4,4 +4,4 @@
 # Example: override golangci-lint to a different version for local experiments.
 
 [tools]
-golangci-lint = "2.12.2"  # must be built with go >= module's go version (1.25)
+golangci-lint = "2.13.2"  # must be built with go >= module's go version (1.27)

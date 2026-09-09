@@ -40,7 +40,7 @@ func buildHTTPClient(insecureSkipVerify bool, sessionID *string) *http.Client {
 	}
 
 	tr := &http.Transport{
-		Dial:                  (&net.Dialer{Timeout: 30 * time.Second, KeepAlive: 20 * time.Second}).Dial,
+		DialContext:           (&net.Dialer{Timeout: 30 * time.Second, KeepAlive: 20 * time.Second}).DialContext,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ResponseHeaderTimeout: 1 * time.Minute,
 		ExpectContinueTimeout: 1 * time.Second,

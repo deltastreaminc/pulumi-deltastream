@@ -49,6 +49,9 @@ jobs:
 
   test:
     needs: [prerequisites, build_provider, build_sdk]
+    concurrency:
+      group: deltastream-integration-tests
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     env:
       MISE_ENV: test
