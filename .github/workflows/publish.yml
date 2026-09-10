@@ -25,7 +25,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup mise
         uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
@@ -37,14 +37,14 @@ jobs:
           cache_save: false
 
       - name: Download all provider tarballs
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: pulumi-resource-deltastream-v${{ inputs.version }}-*.tar.gz
           path: dist/
           merge-multiple: true
 
       - name: Download schema
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: schema.json
           path: dist/
@@ -121,7 +121,7 @@ jobs:
       id-token: write  # Required for NuGet Trusted Publishing (OIDC) and PyPI Trusted Publishing
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: true
 
@@ -136,7 +136,7 @@ jobs:
 
       # Setup Node so npm auth is configured (mise handles the actual node version)
       - name: Setup Node (for npm auth)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 26.8.1
           registry-url: https://registry.npmjs.org
@@ -147,7 +147,7 @@ jobs:
 
       - name: Download Go SDK artifact
         if: inputs.skipGoSdk == false
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: sdk-go
           path: sdk/go/
