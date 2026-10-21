@@ -70,7 +70,7 @@ $(PULUMI) package get-schema .make/$(PROVIDER) \
 - `logoUrl`
 - `keywords`
 - `displayName`
-- `language.csharp.packageName`, `language.csharp.rootNamespace`
+- `language.csharp.packageName`
 - `language.java.*`
 - `language.python.packageName`
 
@@ -162,8 +162,7 @@ $(PULUMI) package get-schema .make/$(PROVIDER) \
         | .language.python.packageName = "pulumi_deltastream"
         | .language.python.respectSchemaVersion = true
         | .language.python.pyproject.enabled = true
-        | .language.csharp.packageName = "Pulumi.DeltaStream"
-        | .language.csharp.rootNamespace = "Pulumi"
+        | .language.csharp.packageName = "DeltaStream.Pulumi"
         | .language.csharp.respectSchemaVersion = true
         | .language.java.basePackage = "io.deltastream.pulumi.deltastream"
         | .language.java.buildFiles = "gradle"
@@ -171,6 +170,8 @@ $(PULUMI) package get-schema .make/$(PROVIDER) \
         | .language.java.dependencies["com.pulumi:pulumi"] = "0.10.0"' \
   > $(SCHEMA_FILE)
 ```
+
+> **Note**: `language.csharp.packageName` is documentation/metadata only. `pulumi package gen-sdk --language dotnet` derives the generated `.csproj`'s NuGet `PackageId` from the C# root namespace/filename, not from this field, and always appends the module name (`Deltastream`) — there is no schema-only way to produce a clean `DeltaStream.Pulumi.csproj`. The `generate_dotnet` Makefile target therefore includes an additional post-processing step that injects `<PackageId>DeltaStream.Pulumi</PackageId>` directly into the generated `.csproj` after `gen-sdk` runs. This avoids publishing under the reserved `Pulumi.*` NuGet ID prefix (owned by the `pulumi-bot` account) — an issue discovered when the initially-chosen `Pulumi.DeltaStream` name repeatedly failed to publish (nuget.org rejects new packages matching a reserved prefix that the publishing account does not own).
 
 ### T-002: Add DeltaStream Logo
 
@@ -197,7 +198,7 @@ $(PULUMI) package get-schema .make/$(PROVIDER) \
 
 `publish.yml` uses `NuGet/login@v1` (OIDC token exchange) instead of a stored API key. The temporary key is valid for 1 hour and is obtained at workflow runtime.
 
-**One-time setup on nuget.org** (requires nuget.org account ownership of `Pulumi.DeltaStream`):
+**One-time setup on nuget.org** (requires nuget.org account ownership of `DeltaStream.Pulumi`):
 
 1. Log into **nuget.org**
 2. Navigate to your username → **Trusted Publishing**
@@ -206,7 +207,7 @@ $(PULUMI) package get-schema .make/$(PROVIDER) \
    - **Repository**: `pulumi-deltastream`
    - **Workflow File**: `publish.yml` *(filename only — do not include `.github/workflows/` prefix)*
    - **Environment**: *(leave empty)*
-4. Add a single repository secret: `NUGET_USERNAME` — set to the nuget.org username (profile name, not email) that owns the `Pulumi.DeltaStream` package
+4. Add a single repository secret: `NUGET_USERNAME` — set to the nuget.org username (profile name, not email) that owns the `DeltaStream.Pulumi` package
 
 > The `NUGET_API_TOKEN` secret is **not needed**. The `NuGet/login@v1` action exchanges the GitHub OIDC token for a short-lived key at publish time. The `publish_sdk` job has `id-token: write` permission for this purpose.
 

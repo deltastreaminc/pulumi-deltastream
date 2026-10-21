@@ -79,7 +79,7 @@ Each language SDK is generated from `schema.json` and published to the correspon
 |---|---|---|---|---|
 | TypeScript/Node | `pulumi package gen-sdk --language nodejs` | npm | `@deltastream/pulumi-deltastream` | `sdk/nodejs/` |
 | Python | `pulumi package gen-sdk --language python` | PyPI | `pulumi-deltastream` | `sdk/python/` |
-| .NET/C# | `pulumi package gen-sdk --language dotnet` | NuGet | `Pulumi.DeltaStream` | `sdk/dotnet/` |
+| .NET/C# | `pulumi package gen-sdk --language dotnet` | NuGet | `DeltaStream.Pulumi` | `sdk/dotnet/` |
 | Go | `pulumi package gen-sdk --language go` | Go module (git tag) | `github.com/deltastreaminc/pulumi-deltastream/sdk/go/pulumi-deltastream` | `sdk/go/` |
 | Java | `pulumi package gen-sdk --language java` | Maven Central (deferred) | `io.deltastream:pulumi-deltastream` | `sdk/java/` |
 
@@ -100,11 +100,13 @@ Each language SDK is generated from `schema.json` and published to the correspon
 | `logoUrl` | `https://raw.githubusercontent.com/.../deltastream-logo.png` |
 | `keywords` | `["pulumi", "deltastream", "category/database", "kind/native"]` |
 | `pluginDownloadURL` | `"github://api.github.com/deltastreaminc"` |
-| `language.csharp.packageName` | `"Pulumi.DeltaStream"` |
+| `language.csharp.packageName` | `"DeltaStream.Pulumi"` (see note below) |
 | `language.java.basePackage` | `"io.deltastream.pulumi.deltastream"` |
 | `language.python.packageName` | `"pulumi_deltastream"` |
 | `language.nodejs.packageName` | `"@deltastream/pulumi-deltastream"` |
 | `language.go.importBasePath` | `"github.com/deltastreaminc/pulumi-deltastream/sdk/go/pulumi-deltastream"` |
+
+**Note on `language.csharp.packageName`**: this schema field is documentation/metadata only — testing showed `pulumi package gen-sdk --language dotnet` does not use it to set the NuGet `PackageId`. The actual published package ID is pinned via a `Makefile` post-processing step that injects `<PackageId>DeltaStream.Pulumi</PackageId>` directly into the generated `.csproj` after codegen runs (avoids the reserved `Pulumi.*` NuGet ID prefix owned by `pulumi-bot`).
 
 ---
 
